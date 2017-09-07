@@ -67,7 +67,7 @@ function hueSaturation() {
 }
 ```
 ### Installation ###
-Clone or download this replant place Clean SJ.jsx script to Photoshop’s Scripts folder:
+Clone or download this repository and place Clean SJ.jsx script to Photoshop’s Scripts folder:
 ```Adobe Photoshop CC 20XX -> Presets -> Scripts -> Clean JS.jsx```
 Restart Photoshop to access Clean JS script from File -> Scripts
 
