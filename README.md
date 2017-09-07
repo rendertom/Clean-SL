@@ -75,7 +75,6 @@ Restart Photoshop to access Clean JS script from File -> Scripts
 
 ---------
 Developed by Tomas Šinkūnas
-
 www.rendertom.com
 ---------
 
