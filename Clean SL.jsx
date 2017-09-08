@@ -58,16 +58,17 @@
 	var script = {
 		name: "Clean ScriptingListenerJS.log",
 		nameShort: "Clean SL",
-		version: "1.0",
+		version: "1.1",
 		developer: {
 			name: File.decode("Tomas%20%C5%A0ink%C5%ABnas"), // Tomas Šinkūnas
 			url: "http://www.rendertom.com"
 		},
 		getInfo: function () {
-			return this.nameShort + " v" + this.version + "\n" + "Photoshop utility tool to clean up ScriptingListenerJS log file. " +
-				"Script performs multiple actions such as cleaning-up variable names and hoisting them to the top, " +
-				"wrapping code block into function, converts charID to string ID for better readability and such.\n\n" +
-				"Output string produces clean results and maintains better code readability.\n\n" +
+			return this.nameShort + " v" + this.version + "\n" + "Photoshop utility tool to clean " +
+				"up ScriptingListenerJS log file. Script performs multiple actions such as cleaning-up " +
+				"variable names and hoisting them to the top, wraps code block into function, " +
+				"converts charID to string ID for better readability and such. \n\n" +
+				"Resulting code is clean and maintains better readability.\n\n" +
 				"Developed by " + this.developer.name + "\n" + this.developer.url;
 		}
 	};
