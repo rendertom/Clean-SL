@@ -58,7 +58,7 @@
 	var script = {
 		name: "Clean ScriptingListenerJS.log",
 		nameShort: "Clean SL",
-		version: "1.2-beta.0",
+		version: "1.2-beta.1",
 		developer: {
 			name: File.decode("Tomas%20%C5%A0ink%C5%ABnas"), // Tomas Šinkūnas
 			url: "http://www.rendertom.com"
@@ -78,7 +78,9 @@
 	var junkArray = [
 		"stringIDToTypeID( \"invokeCommand\" );",
 		"stringIDToTypeID( \"modalStateChanged\" );",
-		"stringIDToTypeID( \"toggleSearch\" );"
+		"stringIDToTypeID( \"toggleSearch\" );",
+		"stringIDToTypeID( \"modalHTMLPending\" );",
+		"stringIDToTypeID( \"convertJSONdescriptor\" );"
 	];
 
 	var demoCode = "var idMk = charIDToTypeID( \"Mk  \" );\n" +
@@ -535,7 +537,7 @@
 
 		addSpace(grpRightColumn);
 
-		var check = {
+		var uiCheckboxes = {
 			hoistVariables: grpRightColumn.add("checkbox", undefined, "Hoist variables to the top"),
 			consolidateVariables: grpRightColumn.add("checkbox", undefined, "Consolidate variables"),
 			descriptiveNames: grpRightColumn.add("checkbox", undefined, "Descriptvive variable names"),
@@ -550,8 +552,8 @@
 		btnCleanCode.onClick = function () {
 			for (var propertyName in settings) {
 				if (!settings.hasOwnProperty(propertyName)) continue;
-				if (check.hasOwnProperty(propertyName)) {
-					settings[propertyName] = check[propertyName].value;
+				if (uiCheckboxes.hasOwnProperty(propertyName)) {
+					settings[propertyName] = uiCheckboxes[propertyName].value;
 				}
 			}
 
@@ -599,8 +601,8 @@
 
 			for (var propertyName in settings) {
 				if (!settings.hasOwnProperty(propertyName)) continue;
-				if (check.hasOwnProperty(propertyName)) {
-					check[propertyName].value = settings[propertyName];
+				if (uiCheckboxes.hasOwnProperty(propertyName)) {
+					uiCheckboxes[propertyName].value = settings[propertyName];
 				}
 			}
 
