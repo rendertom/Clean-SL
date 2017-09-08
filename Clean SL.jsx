@@ -201,7 +201,7 @@
 			if (settings.hoistVariables) string = hoistVariables(string);
 			if (settings.consolidateVariables) string = consolidateVariables(string);
 			if (settings.descriptiveNames) string = descriptiveNames(string);
-			if (settings.charIDToStringID) string = convert_charIDToStringID_to_stringIDToTypeID(string);
+			if (settings.charIDToStringID) string = convert_CharID_to_StringID(string);
 			if (settings.shortStringID) string = shorten_stringIDToTypeID(string);
 			if (settings.wrapToFunction) string = wrapToFunction(string);
 
@@ -333,7 +333,7 @@
 		return outString;
 	}
 
-	function convert_charIDToStringID_to_stringIDToTypeID(inString) {
+	function convert_CharID_to_StringID(inString) {
 		var outString,
 			regexPattern,
 			charIDWithQuotes,
