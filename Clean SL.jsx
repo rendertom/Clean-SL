@@ -52,13 +52,16 @@
 		descriptiveNames: true,
 		charIDToStringID: true,
 		shortStringID: true,
-		wrapToFunction: true
+		wrapToFunction: true,
+		/* -------------------- */
+		closeBeforeEval : true,
+		saveOnQuit : true
 	};
 
 	var script = {
 		name: "Clean ScriptingListenerJS.log",
 		nameShort: "Clean SL",
-		version: "1.2-beta.1",
+		version: "1.2-beta.2",
 		developer: {
 			name: File.decode("Tomas%20%C5%A0ink%C5%ABnas"), // Tomas Šinkūnas
 			url: "http://www.rendertom.com"
@@ -532,10 +535,11 @@
 
 		var btnExecSource = grpRightColumn.add("button", undefined, "Evaluate source");
 		btnExecSource.onClick = function () {
+			if (uiCheckboxes.closeBeforeEval.value === true ) win.close();
 			evaluateScript(etInputText.text);
 		};
 
-		addSpace(grpRightColumn);
+		addSpace(grpRightColumn, 20);
 
 		var uiCheckboxes = {
 			hoistVariables: grpRightColumn.add("checkbox", undefined, "Hoist variables to the top"),
@@ -546,7 +550,12 @@
 			wrapToFunction: grpRightColumn.add("checkbox", undefined, "Wrap to function block")
 		};
 
-		addSpace(grpRightColumn);
+		addSpace(grpRightColumn, 10);
+
+		uiCheckboxes.closeBeforeEval = grpRightColumn.add("checkbox", undefined, "Close before evaluating");
+		uiCheckboxes.saveOnQuit = grpRightColumn.add("checkbox", undefined, "Save UI data on quit");
+		
+		addSpace(grpRightColumn, 20);
 
 		var btnCleanCode = grpRightColumn.add("button", undefined, "Clean Code");
 		btnCleanCode.onClick = function () {
@@ -566,6 +575,7 @@
 
 		var btnExecOutput = grpRightColumn.add("button", undefined, "Evaluate output");
 		btnExecOutput.onClick = function () {
+			if (uiCheckboxes.closeBeforeEval.value === true ) win.close();
 			evaluateScript(etOutputText.text);
 		};
 
@@ -612,9 +622,9 @@
 		win.center();
 		win.show();
 
-		function addSpace(groupContainer) {
+		function addSpace(groupContainer, spaceSize) {
 			var grpSpacer = groupContainer.add("group");
-			grpSpacer.preferredSize.height = 20;
+			grpSpacer.preferredSize.height = spaceSize;
 		}
 	}
 
