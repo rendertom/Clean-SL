@@ -58,7 +58,7 @@
 	var script = {
 		name: "Clean ScriptingListenerJS.log",
 		nameShort: "Clean SL",
-		version: "1.1",
+		version: "1.2-beta.0",
 		developer: {
 			name: File.decode("Tomas%20%C5%A0ink%C5%ABnas"), // Tomas Šinkūnas
 			url: "http://www.rendertom.com"
@@ -74,6 +74,13 @@
 	};
 
 	var logSeparator = "// =======================================================\n";
+
+	var junkArray = [
+		"stringIDToTypeID( \"invokeCommand\" );",
+		"stringIDToTypeID( \"modalStateChanged\" );",
+		"stringIDToTypeID( \"toggleSearch\" );"
+	];
+
 	var demoCode = "var idMk = charIDToTypeID( \"Mk  \" );\n" +
 		"\tvar desc4 = new ActionDescriptor();\n" +
 		"\tvar idNw = charIDToTypeID( \"Nw  \" );\n" +
@@ -178,7 +185,7 @@
 		dirtyCodeArray = dirtyCode.split(logSeparator);
 		for (i = 0, il = dirtyCodeArray.length; i < il; i++) {
 			Incrementor.resetVariables();
-			
+
 			dirtyCodeBlock = trimSpaces(dirtyCodeArray[i]);
 			if (dirtyCodeBlock === "") continue;
 			cleanCodeBlock = main(dirtyCodeBlock);
@@ -403,6 +410,58 @@
 		return outString;
 	}
 
+	function evaluateScript(codeAsString) {
+		try {
+			eval(codeAsString);
+		} catch (e) {
+			alert("Unable to evalue script.\n" + e.toString() + "\nLine: " + e.line.toString());
+		}
+	}
+
+	function removeJunkCode(inString) {
+		try {
+			var cleanCode, cleanCodeArray = [],
+				dirtyCode, dirtyCodeArray = [],
+				isJunkBlock, numberJunksRemoved = 0,
+				alertMessage, i, il;
+
+			dirtyCodeArray = trimSpaces(inString).split(logSeparator);
+
+			for (i = 0, il = dirtyCodeArray.length; i < il; i++) {
+				dirtyCode = dirtyCodeArray[i];
+				if (trimSpaces(dirtyCode) === "") continue;
+				isJunkBlock = stringContainsArrayItems(dirtyCode, junkArray);
+				if (isJunkBlock) {
+					numberJunksRemoved++;
+				} else {
+					cleanCodeArray.push(dirtyCode);
+				}
+			}
+
+			if (numberJunksRemoved === 0) {
+				alertMessage = "All good, no junk found.";
+				cleanCode = false;
+			} else {
+				alertMessage = "Removed " + numberJunksRemoved + " junk " + ((numberJunksRemoved > 1) ? "blocks" : "block") + ".\n";
+				alertMessage += "\"Junk block\" is considered a log block that contains any of these:\n\n" + junkArray.join("\n");
+
+				if (cleanCodeArray.length === 0) {
+					cleanCode = " ";
+				} else {
+					cleanCode = (cleanCodeArray.length === 1) ? "" : logSeparator;
+					cleanCode = logSeparator + cleanCodeArray.join(logSeparator);					
+				}
+			}
+
+			alert(alertMessage);
+
+			return cleanCode;
+
+		} catch (e) {
+			alert(e.toString() + "\nLine: " + e.line.toString());
+		}
+	}
+
 	/********************************************************************************/
 
 
@@ -423,7 +482,7 @@
 		});
 
 		etInputText.onChange = etInputText.onChanging = function () {
-			btnExecSource.enabled = btnCleanCode.enabled = this.text !== "";
+			btnExecSource.enabled = btnCleanCode.enabled = btnRemoveJunkCode.enabled = this.text !== "";
 		};
 
 		var etOutputText = win.add("edittext", undefined, "", {
@@ -459,6 +518,16 @@
 			}
 		};
 
+		var btnRemoveJunkCode = grpRightColumn.add("button", undefined, "Remove Junk Code");
+		btnRemoveJunkCode.helpTip = "\"Junk block\" is considered a log block that contains any of these:\n\n" + junkArray.join("\n");
+		btnRemoveJunkCode.onClick = function () {
+			var cleanCode = removeJunkCode(etInputText.text);
+			if (cleanCode) {
+				etInputText.text = trimSpaces(cleanCode);
+				etInputText.onChanging();
+			}
+		};
+
 		var btnExecSource = grpRightColumn.add("button", undefined, "Evaluate source");
 		btnExecSource.onClick = function () {
 			evaluateScript(etInputText.text);
@@ -479,7 +548,6 @@
 
 		var btnCleanCode = grpRightColumn.add("button", undefined, "Clean Code");
 		btnCleanCode.onClick = function () {
-
 			for (var propertyName in settings) {
 				if (!settings.hasOwnProperty(propertyName)) continue;
 				if (check.hasOwnProperty(propertyName)) {
@@ -612,12 +680,13 @@
 		return readFileContent(logFile);
 	}
 
-	function evaluateScript(codeAsString) {
-		try {
-			eval(codeAsString);
-		} catch (e) {
-			alert("Unable to evalue script.\n" + e.toString() + "\nLine: " + e.line.toString());
+	function stringContainsArrayItems(string, array) {
+		for (var i = 0, il = array.length; i < il; i++) {
+			if (string.indexOf(array[i]) > -1)
+				return true;
 		}
+
+		return false;
 	}
 
 	/********************************************************************************/
