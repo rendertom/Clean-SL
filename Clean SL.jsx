@@ -58,16 +58,17 @@
 	var script = {
 		name: "Clean ScriptingListenerJS.log",
 		nameShort: "Clean SL",
-		version: "1.0",
+		version: "1.1",
 		developer: {
 			name: File.decode("Tomas%20%C5%A0ink%C5%ABnas"), // Tomas Šinkūnas
 			url: "http://www.rendertom.com"
 		},
 		getInfo: function () {
-			return this.nameShort + " v" + this.version + "\n" + "Photoshop utility tool to clean up ScriptingListenerJS log file. " +
-				"Script performs multiple actions such as cleaning-up variable names and hoisting them to the top, " +
-				"wrapping code block into function, converts charID to string ID for better readability and such.\n\n" +
-				"Output string produces clean results and maintains better code readability.\n\n" +
+			return this.nameShort + " v" + this.version + "\n" + "Photoshop utility tool to clean " +
+				"up ScriptingListenerJS log file. Script performs multiple actions such as cleaning-up " +
+				"variable names and hoisting them to the top, wraps code block into function, " +
+				"converts charID to string ID for better readability and such. \n\n" +
+				"Resulting code is clean and maintains better readability.\n\n" +
 				"Developed by " + this.developer.name + "\n" + this.developer.url;
 		}
 	};
@@ -110,6 +111,59 @@
 		"\tdesc4.putInteger( idDocI, 203 );\n" +
 		"executeAction( idMk, desc4, DialogModes.NO );";
 
+	var Incrementor = (function () {
+		var storedVariables = [],
+			storedFunctions = [];
+
+		function contains(arr, value) {
+			var i, il;
+			for (i = 0, il = arr.length; i < il; i++) {
+				if (arr[i] === value) {
+					return arr[i];
+				}
+			}
+			return false;
+		}
+
+		function resetVariables() {
+			storedVariables = [];
+		}
+
+		function resetFunctions() {
+			storedFunctions = [];
+		}
+
+		function incrementVariables(string) {
+			return increment(string, storedVariables);
+		}
+
+		function incrementFunctions(string) {
+			return increment(string, storedFunctions);
+		}
+
+		function increment(string, storedArray) {
+			var coreName, newVariableVersion, versionNumber;
+
+			coreName = string.replace(/\d+$/, "");
+			newVariableVersion = coreName;
+			versionNumber = 2;
+			while (contains(storedArray, newVariableVersion)) {
+				newVariableVersion = coreName + versionNumber;
+				versionNumber++;
+			}
+
+			storedArray.push(newVariableVersion);
+			return newVariableVersion;
+		}
+
+		return {
+			resetVariables: resetVariables,
+			resetFunctions: resetFunctions,
+			incrementVariables: incrementVariables,
+			incrementFunctions: incrementFunctions
+		};
+	})();
+
 	buidUI();
 
 	/* MAIN */
@@ -119,8 +173,12 @@
 			dirtyCodeBlock, dirtyCodeArray = [],
 			i, il;
 
+		Incrementor.resetFunctions();
+
 		dirtyCodeArray = dirtyCode.split(logSeparator);
 		for (i = 0, il = dirtyCodeArray.length; i < il; i++) {
+			Incrementor.resetVariables();
+			
 			dirtyCodeBlock = trimSpaces(dirtyCodeArray[i]);
 			if (dirtyCodeBlock === "") continue;
 			cleanCodeBlock = main(dirtyCodeBlock);
@@ -144,7 +202,7 @@
 			if (settings.hoistVariables) string = hoistVariables(string);
 			if (settings.consolidateVariables) string = consolidateVariables(string);
 			if (settings.descriptiveNames) string = descriptiveNames(string);
-			if (settings.charIDToStringID) string = convert_charIDToStringID_to_stringIDToTypeID(string);
+			if (settings.charIDToStringID) string = convert_CharID_to_StringID(string);
 			if (settings.shortStringID) string = shorten_stringIDToTypeID(string);
 			if (settings.wrapToFunction) string = wrapToFunction(string);
 
@@ -237,21 +295,6 @@
 			variableValue,
 			variableDeclarationLine,
 			variableDeclarationLines = [],
-			storedVariables = [],
-			incrementStringVersion = function (string) {
-				var coreName, newVariableVersion, versionNUmber;
-
-				coreName = string.replace(/\d+$/, "");
-				newVariableVersion = coreName;
-				versionNumber = 2;
-				while (contains(storedVariables, newVariableVersion)) {
-					newVariableVersion = coreName + versionNumber;
-					versionNumber++;
-				}
-
-				storedVariables.push(newVariableVersion);
-				return newVariableVersion;
-			},
 			namesObject = [{
 				constructorName: "ActionDescriptor",
 				variableName: "descriptor"
@@ -283,7 +326,7 @@
 					}
 				}
 
-				variableNameNew = incrementStringVersion(variableNameNew);
+				variableNameNew = Incrementor.incrementVariables(variableNameNew);
 				outString = outString.replace(new RegExp(variableName, "g"), variableNameNew);
 			}
 		}
@@ -291,7 +334,7 @@
 		return outString;
 	}
 
-	function convert_charIDToStringID_to_stringIDToTypeID(inString) {
+	function convert_CharID_to_StringID(inString) {
 		var outString,
 			regexPattern,
 			charIDWithQuotes,
@@ -353,6 +396,7 @@
 			}
 		}
 
+		functionName = Incrementor.incrementFunctions(functionName);
 		functionBlock = functionName + "();\n" + "function " + functionName + "() {\n";
 		outString = functionBlock + fixIndentation(outString, "\t", false) + "\n}";
 
@@ -362,7 +406,7 @@
 	/********************************************************************************/
 
 
-	
+
 	/* USER INTERFACE */
 
 	function buidUI() {
@@ -423,12 +467,12 @@
 		addSpace(grpRightColumn);
 
 		var check = {
-			hoistVariables : grpRightColumn.add("checkbox", undefined, "Hoist variables to the top"),
-			consolidateVariables : grpRightColumn.add("checkbox", undefined, "Consolidate variables"),
+			hoistVariables: grpRightColumn.add("checkbox", undefined, "Hoist variables to the top"),
+			consolidateVariables: grpRightColumn.add("checkbox", undefined, "Consolidate variables"),
 			descriptiveNames: grpRightColumn.add("checkbox", undefined, "Descriptvive variable names"),
-			charIDToStringID : grpRightColumn.add("checkbox", undefined, "Convert charID to stringID"),
-			shortStringID : grpRightColumn.add("checkbox", undefined, "Shorten stringIDToTypeID"),
-			wrapToFunction : grpRightColumn.add("checkbox", undefined, "Wrap to function block")
+			charIDToStringID: grpRightColumn.add("checkbox", undefined, "Convert charID to stringID"),
+			shortStringID: grpRightColumn.add("checkbox", undefined, "Shorten stringIDToTypeID"),
+			wrapToFunction: grpRightColumn.add("checkbox", undefined, "Wrap to function block")
 		};
 
 		addSpace(grpRightColumn);
@@ -626,22 +670,6 @@
 			alert("Unable to convert \"" + charID + "\" to StringID\n" + e.toString() + "\nLine: " + e.line.toString() + "\n" + charID);
 			return charID;
 		}
-	}
-
-	/********************************************************************************/
-
-
-
-	/* ARRAY */
-
-	function contains(arr, value) {
-		var i, il;
-		for (i = 0, il = arr.length; i < il; i++) {
-			if (arr[i] === value) {
-				return arr[i];
-			}
-		}
-		return false;
 	}
 
 	/********************************************************************************/

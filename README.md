@@ -3,7 +3,7 @@
 # Clean SL #
 Clean SL (Clean ScriptingListenerJS.log) is a utility tool for Adobe Photoshop to clean up ScriptingListenerJS.log file. 
 
-Script performs multiple actions such as cleaning-up variable names and hoisting them to the top, wraps code block into function, converts charID to string ID for better readability and such. Resulting code is clean and maintains better code readability.
+Script performs multiple actions such as cleaning-up variable names and hoisting them to the top, wraps code block into function, converts charID to string ID for better readability and such. Resulting code is clean and maintains better readability.
 
 ### Features: ###
 * Load entire ScriptingListenerJS.log content
@@ -66,12 +66,17 @@ function hueSaturation() {
     executeAction( s2t( "hueSaturation" ), descriptor, DialogModes.NO );
 }
 ```
+
+### Change log: ###
+* v1.1 - 2017 09 08 - Increments function names when processing multiple logs
+* v1 - 2017 09 07 - Initial release
+
 ### Installation ###
-Clone or download this repository and place Clean SJ.jsx script to Photoshop’s Scripts folder:
+Clone or download this repository and place **Clean SJ.jsx** script to Photoshop’s Scripts folder:
 
-```Adobe Photoshop CC 20XX -> Presets -> Scripts -> Clean JS.jsx```
+```Adobe Photoshop CC 20XX -> Presets -> Scripts -> **Clean JS.jsx**```
 
-Restart Photoshop to access Clean JS script from File -> Scripts
+Restart Photoshop to access **Clean JS** script from File -> Scripts
 
 ---------
 Developed by Tomas Šinkūnas
