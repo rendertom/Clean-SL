@@ -48,16 +48,46 @@
 
 	//@include "lib/json2.js"
 
+	// var settings = {
+	// 	hoistVariables: true,
+	// 	consolidateVariables: true,
+	// 	descriptiveNames: true,
+	// 	charIDToStringID: true,
+	// 	shortStringID: true,
+	// 	wrapToFunction: true,
+	// 	/* -------------------- */
+	// 	closeBeforeEval : true,
+	// 	saveOnQuit : true
+	// };
+
 	var settings = {
-		hoistVariables: true,
-		consolidateVariables: true,
-		descriptiveNames: true,
-		charIDToStringID: true,
-		shortStringID: true,
-		wrapToFunction: true,
-		/* -------------------- */
-		closeBeforeEval : true,
-		saveOnQuit : true
+		hoistVariables: {
+			value: true
+		},
+		consolidateVariables: {
+			value: false
+		},
+		descriptiveNames: {
+			value: false
+		},
+		charIDToStringID: {
+			value: false
+		},
+		shortStringID: {
+			value: true
+		},
+		wrapToFunction: {
+			value: true
+		},
+		closeBeforeEval: {
+			value: true
+		},
+		saveOnQuit: {
+			value: false
+		},
+		etOutputText : {
+			text : "OK Bitch!"
+		}
 	};
 
 	var script = {
@@ -215,12 +245,12 @@
 			string = fixIndentation(string);
 			string = fixTripleQuotes(string);
 
-			if (settings.hoistVariables) string = hoistVariables(string);
-			if (settings.consolidateVariables) string = consolidateVariables(string);
-			if (settings.descriptiveNames) string = descriptiveNames(string);
-			if (settings.charIDToStringID) string = convert_CharID_to_StringID(string);
-			if (settings.shortStringID) string = shorten_stringIDToTypeID(string);
-			if (settings.wrapToFunction) string = wrapToFunction(string);
+			if (settings.hoistVariables.value) string = hoistVariables(string);
+			if (settings.consolidateVariables.value) string = consolidateVariables(string);
+			if (settings.descriptiveNames.value) string = descriptiveNames(string);
+			if (settings.charIDToStringID.value) string = convert_CharID_to_StringID(string);
+			if (settings.shortStringID.value) string = shorten_stringIDToTypeID(string);
+			if (settings.wrapToFunction.value) string = wrapToFunction(string);
 
 			return string;
 
@@ -458,7 +488,7 @@
 					cleanCode = " ";
 				} else {
 					cleanCode = (cleanCodeArray.length === 1) ? "" : logSeparator;
-					cleanCode = logSeparator + cleanCodeArray.join(logSeparator);					
+					cleanCode = logSeparator + cleanCodeArray.join(logSeparator);
 				}
 			}
 
@@ -539,7 +569,7 @@
 
 		var btnExecSource = grpRightColumn.add("button", undefined, "Evaluate source");
 		btnExecSource.onClick = function () {
-			if (uiCheckboxes.closeBeforeEval.value === true ) win.close();
+			if (uiCheckboxes.closeBeforeEval.value === true) win.close();
 			evaluateScript(etInputText.text);
 		};
 
@@ -551,25 +581,22 @@
 			descriptiveNames: grpRightColumn.add("checkbox", undefined, "Descriptvive variable names"),
 			charIDToStringID: grpRightColumn.add("checkbox", undefined, "Convert charID to stringID"),
 			shortStringID: grpRightColumn.add("checkbox", undefined, "Shorten stringIDToTypeID"),
-			wrapToFunction: grpRightColumn.add("checkbox", undefined, "Wrap to function block")
+			wrapToFunction: grpRightColumn.add("checkbox", undefined, "Wrap to function block"),
+
+			etOutputText : etOutputText,
 		};
 
 		addSpace(grpRightColumn, 10);
 
 		uiCheckboxes.closeBeforeEval = grpRightColumn.add("checkbox", undefined, "Close before evaluating");
 		uiCheckboxes.saveOnQuit = grpRightColumn.add("checkbox", undefined, "Save UI data on quit");
-		
+
 		addSpace(grpRightColumn, 20);
 
 		var btnCleanCode = grpRightColumn.add("button", undefined, "Clean Code");
 		btnCleanCode.onClick = function () {
-			for (var propertyName in settings) {
-				if (!settings.hasOwnProperty(propertyName)) continue;
-				if (uiCheckboxes.hasOwnProperty(propertyName)) {
-					settings[propertyName] = uiCheckboxes[propertyName].value;
-				}
-			}
-
+			copyValuesFromObjectToObject(uiCheckboxes, settings);
+			
 			var finalCode = preprocess(etInputText.text);
 			if (finalCode) {
 				etOutputText.text = finalCode;
@@ -579,7 +606,7 @@
 
 		var btnExecOutput = grpRightColumn.add("button", undefined, "Evaluate output");
 		btnExecOutput.onClick = function () {
-			if (uiCheckboxes.closeBeforeEval.value === true ) win.close();
+			if (uiCheckboxes.closeBeforeEval.value === true) win.close();
 			evaluateScript(etOutputText.text);
 		};
 
@@ -608,19 +635,25 @@
 		};
 
 		win.onShow = function () {
+			var uiValues = getUIvalues();		
+			if (!uiValues) {
+				uiValues = settings;
+			}
+
+			copyValuesFromObjectToObject(uiValues, uiCheckboxes);
+
 			btnCleanCode.size.height = btnCleanCode.size.height * 1.5;
 			etInputText.text = demoCode;
 			etOutputText.onChanging();
 			etInputText.onChanging();
 
-			for (var propertyName in settings) {
-				if (!settings.hasOwnProperty(propertyName)) continue;
-				if (uiCheckboxes.hasOwnProperty(propertyName)) {
-					uiCheckboxes[propertyName].value = settings[propertyName];
-				}
-			}
-
 			win.layout.layout(true);
+		};
+
+		win.onClose = function () {
+			copyValuesFromObjectToObject(uiCheckboxes, settings);
+
+			saveUIvalues(settings);
 		};
 
 		win.center();
@@ -634,7 +667,37 @@
 
 	/********************************************************************************/
 
+	function getUIvalues() {
+		var settingsFile = getSettignsFile();
+		if (!settingsFile) return null;
 
+		var fileContent = readFileContent(settingsFile);
+
+		var settingsJson;
+		try {
+			settingsJson = JSON.parse(fileContent);
+		} catch (e) {
+			alert("Unable to parse settings file. Will use default values instead");
+		}
+		
+		return settingsJson;
+	}
+
+	function saveUIvalues() {
+		var settingsFile = new File(Folder.desktop.fsName + "/" + "Clean SL.txt");
+		var settingsAsString = JSON.stringify(settings, false, 4);
+
+		saveFile(settingsFile, "txt", settingsAsString);
+	}
+
+	function getSettignsFile() {
+		var settingsFile = new File(Folder.desktop.fsName + "/" + "Clean SL.txt");
+		if (settingsFile.exists) {
+			return settingsFile;
+		} else {
+			return null;
+		}
+	}
 
 	/* HELPER FUNCTIONS */
 
@@ -705,6 +768,27 @@
 		return false;
 	}
 
+	function copyValuesFromObjectToObject(sourceObject, targetObject) {
+		try {
+			for (var propertyName in sourceObject) {
+				if (!sourceObject.hasOwnProperty(propertyName) ||
+					!targetObject.hasOwnProperty(propertyName)) {
+					continue;
+				}
+
+				for (var deepPropertyName in sourceObject[propertyName]) {
+					if (!sourceObject[propertyName].hasOwnProperty(deepPropertyName) ||
+						!targetObject[propertyName].hasOwnProperty(deepPropertyName)) {
+						continue;
+					}
+					targetObject[propertyName][deepPropertyName] = sourceObject[propertyName][deepPropertyName];
+				}
+			}
+		} catch (e) {
+			alert(e.toString() + "\nLine: " + e.line.toString());
+		}
+	}
+
 	/********************************************************************************/
 
 
@@ -737,7 +821,7 @@
 	}
 
 	function fixTripleQuotes(string) {
-		return string.replace(/"""/g,"\"");
+		return string.replace(/"""/g, "\"");
 	}
 
 	function splitToNewLines(inString, separator) {
