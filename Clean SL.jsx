@@ -79,11 +79,12 @@
 	var logSeparator = "// =======================================================\n";
 
 	var junkArray = [
+		"stringIDToTypeID( \"convertJSONdescriptor\" );",
 		"stringIDToTypeID( \"invokeCommand\" );",
+		"stringIDToTypeID( \"modalHTMLPending\" );",
 		"stringIDToTypeID( \"modalStateChanged\" );",
 		"stringIDToTypeID( \"toggleSearch\" );",
-		"stringIDToTypeID( \"modalHTMLPending\" );",
-		"stringIDToTypeID( \"convertJSONdescriptor\" );"
+		"stringIDToTypeID( \"toolModalStateChanged\" );"
 	];
 
 	var demoCode = "var idMk = charIDToTypeID( \"Mk  \" );\n" +
