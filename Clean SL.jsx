@@ -105,7 +105,7 @@
 
 		function incrementFunctions(string) {
 			var functionName = string;
-			var functionName = validateFunctionName(string);
+			functionName = validateFunctionName(string);
 			return increment(functionName, storedFunctions);
 		}
 
@@ -258,7 +258,7 @@
 		}
 
 		function saveStartupSettings() {
-			startupSettings.saveOnQuit = false;
+			startupSettings.saveOnQuit.value = false;
 			save(startupSettings);
 		}
 
@@ -268,7 +268,7 @@
 				settings = defaultSettings;
 			}
 
-			startupSettings = settings;
+			startupSettings = JSON.parse(JSON.stringify(settings))
 			return settings;
 		}
 
@@ -723,7 +723,6 @@
 				} else {
 					Settings.saveStartupSettings();
 				}
-
 			} catch (e) {
 				alert(e.toString() + "\nLine: " + e.line.toString());
 			}
