@@ -684,7 +684,7 @@
 		btnSave.onClick = function () {
 			var pathToFile = File.saveDialog("Save output code.");
 			if (pathToFile) {
-				saveFile(pathToFile, "txt", uiControlls.etOutputText.text);
+				saveFile(pathToFile, "jsx", uiControlls.etOutputText.text);
 			}
 		};
 
@@ -738,6 +738,7 @@
 	}
 
 	/********************************************************************************/
+
 
 
 	/* HELPER FUNCTIONS */
