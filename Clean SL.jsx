@@ -196,31 +196,6 @@
 			}
 		}
 
-		function writeFile(fileObj, fileContent, encoding) {
-			encoding = encoding || "utf-8";
-			fileObj = (fileObj instanceof File) ? fileObj : new File(fileObj);
-
-			var parentFolder = fileObj.parent;
-			if (!parentFolder.exists && !parentFolder.create())
-				throw new Error("Cannot create file in path " + fileObj.fsName);
-
-			fileObj.encoding = encoding;
-			fileObj.open("w");
-			fileObj.write(fileContent);
-			fileObj.close();
-
-			return fileObj;
-		}
-
-		function readFileContent(fileObj, encoding) {
-			var fileContent;
-			fileObj.open("r");
-			fileObj.encoding = encoding || "utf-8";
-			fileContent = fileObj.read();
-			fileObj.close();
-			return fileContent;
-		}
-
 		function getSettingsFromFile() {
 			var settingsFile, fileContent, settingsJson;
 
@@ -874,14 +849,32 @@
 
 	function readFileContent(fileObj, encoding) {
 		var fileContent;
+
 		fileObj.open("r");
 		fileObj.encoding = encoding || "utf-8";
 		fileContent = fileObj.read();
 		fileObj.close();
+
 		return fileContent;
 	}
 
-	function saveFile(fileObject, fileExtension, fileContents) {
+	function writeFile(fileObj, fileContent, encoding) {
+		encoding = encoding || "utf-8";
+		fileObj = (fileObj instanceof File) ? fileObj : new File(fileObj);
+
+		var parentFolder = fileObj.parent;
+		if (!parentFolder.exists && !parentFolder.create())
+			throw new Error("Cannot create file in path " + fileObj.fsName);
+
+		fileObj.encoding = encoding;
+		fileObj.open("w");
+		fileObj.write(fileContent);
+		fileObj.close();
+
+		return fileObj;
+	}
+
+	function saveFile(fileObject, fileExtension, fileContent) {
 		var filePath, newPath;
 
 		filePath = fileObject.toString();
@@ -891,10 +884,6 @@
 			newPath = filePath.substr(0, filePath.lastIndexOf(".")) + "." + fileExtension;
 		}
 
-		fileObject = File(newPath);
-		fileObject.open("W");
-		fileObject.encoding = "utf-8";
-		fileObject.write(fileContents);
-		fileObject.close();
+		writeFile(newPath, fileContent);
 	}
 })();
