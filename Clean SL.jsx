@@ -46,6 +46,8 @@
 
 (function () {
 
+	//@include "lib/json2.js"
+
 	var settings = {
 		hoistVariables: true,
 		consolidateVariables: true,
