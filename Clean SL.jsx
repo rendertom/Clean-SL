@@ -48,48 +48,6 @@
 
 	//@include "lib/json2.js"
 
-	// var settings = {
-	// 	hoistVariables: true,
-	// 	consolidateVariables: true,
-	// 	descriptiveNames: true,
-	// 	charIDToStringID: true,
-	// 	shortStringID: true,
-	// 	wrapToFunction: true,
-	// 	/* -------------------- */
-	// 	closeBeforeEval : true,
-	// 	saveOnQuit : true
-	// };
-
-	var settings = {
-		hoistVariables: {
-			value: true
-		},
-		consolidateVariables: {
-			value: false
-		},
-		descriptiveNames: {
-			value: false
-		},
-		charIDToStringID: {
-			value: false
-		},
-		shortStringID: {
-			value: true
-		},
-		wrapToFunction: {
-			value: true
-		},
-		closeBeforeEval: {
-			value: true
-		},
-		saveOnQuit: {
-			value: false
-		},
-		etOutputText : {
-			text : "OK Bitch!"
-		}
-	};
-
 	var script = {
 		name: "Clean ScriptingListenerJS.log",
 		nameShort: "Clean SL",
@@ -118,43 +76,6 @@
 		"stringIDToTypeID( \"toggleSearch\" );",
 		"stringIDToTypeID( \"toolModalStateChanged\" );"
 	];
-
-	var demoCode = "var idMk = charIDToTypeID( \"Mk  \" );\n" +
-		"\tvar desc4 = new ActionDescriptor();\n" +
-		"\tvar idNw = charIDToTypeID( \"Nw  \" );\n" +
-		"\t\tvar desc5 = new ActionDescriptor();\n" +
-		"\t\tvar idartboard = stringIDToTypeID( \"artboard\" );\n" +
-		"\t\tdesc5.putBoolean( idartboard, false );\n" +
-		"\t\tvar idMd = charIDToTypeID( \"Md  \" );\n" +
-		"\t\tvar idRGBM = charIDToTypeID( \"RGBM\" );\n" +
-		"\t\tdesc5.putClass( idMd, idRGBM );\n" +
-		"\t\tvar idWdth = charIDToTypeID( \"Wdth\" );\n" +
-		"\t\tvar idRlt = charIDToTypeID( \"#Rlt\" );\n" +
-		"\t\tdesc5.putUnitDouble( idWdth, idRlt, 500.000000 );\n" +
-		"\t\tvar idHght = charIDToTypeID( \"Hght\" );\n" +
-		"\t\tvar idRlt = charIDToTypeID( \"#Rlt\" );\n" +
-		"\t\tdesc5.putUnitDouble( idHght, idRlt, 500.000000 );\n" +
-		"\t\tvar idRslt = charIDToTypeID( \"Rslt\" );\n" +
-		"\t\tvar idRsl = charIDToTypeID( \"#Rsl\" );\n" +
-		"\t\tdesc5.putUnitDouble( idRslt, idRsl, 72.000000 );\n" +
-		"\t\tvar idpixelScaleFactor = stringIDToTypeID( \"pixelScaleFactor\" );\n" +
-		"\t\tdesc5.putDouble( idpixelScaleFactor, 1.000000 );\n" +
-		"\t\tvar idFl = charIDToTypeID( \"Fl  \" );\n" +
-		"\t\tvar idFl = charIDToTypeID( \"Fl  \" );\n" +
-		"\t\tvar idWht = charIDToTypeID( \"Wht \" );\n" +
-		"\t\tdesc5.putEnumerated( idFl, idFl, idWht );\n" +
-		"\t\tvar idDpth = charIDToTypeID( \"Dpth\" );\n" +
-		"\t\tdesc5.putInteger( idDpth, 8 );\n" +
-		"\t\tvar idprofile = stringIDToTypeID( \"profile\" );\n" +
-		"\t\tdesc5.putString( idprofile, \"\"\"sRGB IEC61966-2.1\"\"\" );\n" +
-		"\t\tvar idGdes = charIDToTypeID( \"Gdes\" );\n" +
-		"\t\t\tvar list1 = new ActionList();\n" +
-		"\t\tdesc5.putList( idGdes, list1 );\n" +
-		"\tvar idDcmn = charIDToTypeID( \"Dcmn\" );\n" +
-		"\tdesc4.putObject( idNw, idDcmn, desc5 );\n" +
-		"\tvar idDocI = charIDToTypeID( \"DocI\" );\n" +
-		"\tdesc4.putInteger( idDocI, 203 );\n" +
-		"executeAction( idMk, desc4, DialogModes.NO );";
 
 	var Incrementor = (function () {
 		var storedVariables = [],
@@ -208,6 +129,147 @@
 			incrementFunctions: incrementFunctions
 		};
 	})();
+
+	var Settings = (function () {
+		var settings, defaultSettings, startupSettings,
+			pathToSettingsFile;
+
+		pathToSettingsFile = File($.fileName).parent.fsName + "/" + "Clean SL Settings.txt";
+		defaultSettings = {
+			hoistVariables: {
+				value: true
+			},
+			consolidateVariables: {
+				value: true
+			},
+			descriptiveNames: {
+				value: true
+			},
+			charIDToStringID: {
+				value: true
+			},
+			shortStringID: {
+				value: true
+			},
+			wrapToFunction: {
+				value: true
+			},
+			closeBeforeEval: {
+				value: true
+			},
+			saveOnQuit: {
+				value: true
+			},
+			etInputText: {
+				text : ""
+			},
+			etOutputText: {
+				text: ""
+			}
+		};
+
+		function copyObjectValues(sourceObject, targetObject) {
+			for (var propertyName in sourceObject) {
+				if (!sourceObject.hasOwnProperty(propertyName) ||
+					!targetObject.hasOwnProperty(propertyName)) {
+					continue;
+				}
+
+				for (var deepPropertyName in sourceObject[propertyName]) {
+					if (!sourceObject[propertyName].hasOwnProperty(deepPropertyName) ||
+						!targetObject[propertyName].hasOwnProperty(deepPropertyName)) {
+						continue;
+					}
+					targetObject[propertyName][deepPropertyName] = sourceObject[propertyName][deepPropertyName];
+				}
+			}
+		}
+
+		function writeFile(fileObj, fileContent, encoding) {
+			encoding = encoding || "utf-8";
+			fileObj = (fileObj instanceof File) ? fileObj : new File(fileObj);
+
+			var parentFolder = fileObj.parent;
+			if (!parentFolder.exists && !parentFolder.create())
+				throw new Error("Cannot create file in path " + fileObj.fsName);
+
+			fileObj.encoding = encoding;
+			fileObj.open("w");
+			fileObj.write(fileContent);
+			fileObj.close();
+
+			return fileObj;
+		}
+
+		function readFileContent(fileObj, encoding) {
+			var fileContent;
+			fileObj.open("r");
+			fileObj.encoding = encoding || "utf-8";
+			fileContent = fileObj.read();
+			fileObj.close();
+			return fileContent;
+		}
+
+		function getSettingsFromFile() {
+			var settingsFile, fileContent, settingsJson;
+
+			settingsFile = new File(pathToSettingsFile);
+			if (!settingsFile.exists) {
+				return null;
+			}
+
+			fileContent = readFileContent(settingsFile);
+
+			try {
+				settingsJson = JSON.parse(fileContent);
+			} catch (e) {
+				alert("Unable to parse settings file. Will use default values instead");
+			}
+
+			return settingsJson;
+		}
+
+		function save(data) {
+			var settingsFile, settingsAsString;
+			try {
+				settingsFile = new File(pathToSettingsFile);
+				settingsAsString = JSON.stringify(data, false, 4);
+
+				writeFile(settingsFile, settingsAsString);
+
+			} catch (e) {
+				alert(e.toString() + "\nLine: " + e.line.toString());
+			}
+		}
+
+		function saveSettings() {
+			save(settings);
+		}
+
+		function saveStartupSettings() {
+			startupSettings.saveOnQuit = false;
+			save(startupSettings);
+		}
+
+		function init() {
+			settings = getSettingsFromFile();
+			if (!settings) {
+				settings = defaultSettings;
+			}
+
+			startupSettings = settings;
+			return settings;
+		}
+
+		return {
+			saveSettings: saveSettings,
+			saveStartupSettings: saveStartupSettings,
+			init: init,
+			copyObjectValues : copyObjectValues,
+		}
+	})();
+
+	var settings = Settings.init();
 
 	buidUI();
 
@@ -508,6 +570,7 @@
 	/* USER INTERFACE */
 
 	function buidUI() {
+		var uiControlls = {};
 		var win = new Window("dialog", script.name + " v" + script.version, undefined, {
 			resizeable: true
 		});
@@ -516,19 +579,19 @@
 		win.orientation = "row";
 
 
-		var etInputText = win.add("edittext", undefined, "", {
+		uiControlls.etInputText = win.add("edittext", undefined, "", {
 			multiline: true
 		});
 
-		etInputText.onChange = etInputText.onChanging = function () {
+		uiControlls.etInputText.onChange = uiControlls.etInputText.onChanging = function () {
 			btnExecSource.enabled = btnCleanCode.enabled = btnRemoveJunkCode.enabled = this.text !== "";
 		};
 
-		var etOutputText = win.add("edittext", undefined, "", {
+		uiControlls.etOutputText = win.add("edittext", undefined, "", {
 			multiline: true
 		});
 
-		etOutputText.onChange = etOutputText.onChanging = function () {
+		uiControlls.etOutputText.onChange = uiControlls.etOutputText.onChanging = function () {
 			btnSave.enabled = btnExecOutput.enabled = this.text !== "";
 		};
 
@@ -543,8 +606,8 @@
 		btnReadFullLog.onClick = function () {
 			var fullLog = getFullLog();
 			if (fullLog) {
-				etInputText.text = trimSpaces(fullLog);
-				etInputText.onChanging();
+				uiControlls.etInputText.text = trimSpaces(fullLog);
+				uiControlls.etInputText.onChanging();
 			}
 		};
 
@@ -552,69 +615,65 @@
 		btnReadLastLog.onClick = function () {
 			var lastLogEntry = getLastLogEntry();
 			if (lastLogEntry) {
-				etInputText.text = lastLogEntry;
-				etInputText.onChanging();
+				uiControlls.etInputText.text = lastLogEntry;
+				uiControlls.etInputText.onChanging();
 			}
 		};
 
 		var btnRemoveJunkCode = grpRightColumn.add("button", undefined, "Remove Junk Code");
 		btnRemoveJunkCode.helpTip = "\"Junk block\" is considered a log block that contains any of these:\n\n" + junkArray.join("\n");
 		btnRemoveJunkCode.onClick = function () {
-			var cleanCode = removeJunkCode(etInputText.text);
+			var cleanCode = removeJunkCode(uiControlls.etInputText.text);
 			if (cleanCode) {
-				etInputText.text = trimSpaces(cleanCode);
-				etInputText.onChanging();
+				uiControlls.etInputText.text = trimSpaces(cleanCode);
+				uiControlls.etInputText.onChanging();
 			}
 		};
 
 		var btnExecSource = grpRightColumn.add("button", undefined, "Evaluate source");
 		btnExecSource.onClick = function () {
-			if (uiCheckboxes.closeBeforeEval.value === true) win.close();
-			evaluateScript(etInputText.text);
+			if (uiControlls.closeBeforeEval.value === true) win.close();
+			evaluateScript(uiControlls.etInputText.text);
 		};
 
 		addSpace(grpRightColumn, 20);
 
-		var uiCheckboxes = {
-			hoistVariables: grpRightColumn.add("checkbox", undefined, "Hoist variables to the top"),
-			consolidateVariables: grpRightColumn.add("checkbox", undefined, "Consolidate variables"),
-			descriptiveNames: grpRightColumn.add("checkbox", undefined, "Descriptvive variable names"),
-			charIDToStringID: grpRightColumn.add("checkbox", undefined, "Convert charID to stringID"),
-			shortStringID: grpRightColumn.add("checkbox", undefined, "Shorten stringIDToTypeID"),
-			wrapToFunction: grpRightColumn.add("checkbox", undefined, "Wrap to function block"),
-
-			etOutputText : etOutputText,
-		};
+		uiControlls.hoistVariables = grpRightColumn.add("checkbox", undefined, "Hoist variables to the top"),
+		uiControlls.consolidateVariables = grpRightColumn.add("checkbox", undefined, "Consolidate variables"),
+		uiControlls.descriptiveNames = grpRightColumn.add("checkbox", undefined, "Descriptvive variable names"),
+		uiControlls.charIDToStringID = grpRightColumn.add("checkbox", undefined, "Convert charID to stringID"),
+		uiControlls.shortStringID = grpRightColumn.add("checkbox", undefined, "Shorten stringIDToTypeID"),
+		uiControlls.wrapToFunction = grpRightColumn.add("checkbox", undefined, "Wrap to function block"),
 
 		addSpace(grpRightColumn, 10);
 
-		uiCheckboxes.closeBeforeEval = grpRightColumn.add("checkbox", undefined, "Close before evaluating");
-		uiCheckboxes.saveOnQuit = grpRightColumn.add("checkbox", undefined, "Save UI data on quit");
+		uiControlls.closeBeforeEval = grpRightColumn.add("checkbox", undefined, "Close before evaluating");
+		uiControlls.saveOnQuit = grpRightColumn.add("checkbox", undefined, "Save UI data on quit");
 
 		addSpace(grpRightColumn, 20);
 
 		var btnCleanCode = grpRightColumn.add("button", undefined, "Clean Code");
 		btnCleanCode.onClick = function () {
-			copyValuesFromObjectToObject(uiCheckboxes, settings);
-			
-			var finalCode = preprocess(etInputText.text);
+			Settings.copyObjectValues(uiControlls, settings);
+
+			var finalCode = preprocess(uiControlls.etInputText.text);
 			if (finalCode) {
-				etOutputText.text = finalCode;
-				etOutputText.onChanging();
+				uiControlls.etOutputText.text = finalCode;
+				uiControlls.etOutputText.onChanging();
 			}
 		};
 
 		var btnExecOutput = grpRightColumn.add("button", undefined, "Evaluate output");
 		btnExecOutput.onClick = function () {
-			if (uiCheckboxes.closeBeforeEval.value === true) win.close();
-			evaluateScript(etOutputText.text);
+			if (uiControlls.closeBeforeEval.value === true) win.close();
+			evaluateScript(uiControlls.etOutputText.text);
 		};
 
 		var btnSave = grpRightColumn.add("button", undefined, "Save output code");
 		btnSave.onClick = function () {
 			var pathToFile = File.saveDialog("Save output code.");
 			if (pathToFile) {
-				saveFile(pathToFile, "txt", etOutputText.text);
+				saveFile(pathToFile, "txt", uiControlls.etOutputText.text);
 			}
 		};
 
@@ -635,25 +694,28 @@
 		};
 
 		win.onShow = function () {
-			var uiValues = getUIvalues();		
-			if (!uiValues) {
-				uiValues = settings;
-			}
 
-			copyValuesFromObjectToObject(uiValues, uiCheckboxes);
+			Settings.copyObjectValues(settings, uiControlls);
 
 			btnCleanCode.size.height = btnCleanCode.size.height * 1.5;
-			etInputText.text = demoCode;
-			etOutputText.onChanging();
-			etInputText.onChanging();
+			uiControlls.etOutputText.onChanging();
+			uiControlls.etInputText.onChanging();
 
 			win.layout.layout(true);
 		};
 
 		win.onClose = function () {
-			copyValuesFromObjectToObject(uiCheckboxes, settings);
+			try {
+				if (uiControlls.saveOnQuit.value === true) {
+					Settings.copyObjectValues(uiControlls, settings);
+					Settings.saveSettings();
+				} else {
+					Settings.saveStartupSettings();
+				}
 
-			saveUIvalues(settings);
+			} catch (e) {
+				alert(e.toString() + "\nLine: " + e.line.toString());
+			}
 		};
 
 		win.center();
@@ -667,37 +729,6 @@
 
 	/********************************************************************************/
 
-	function getUIvalues() {
-		var settingsFile = getSettignsFile();
-		if (!settingsFile) return null;
-
-		var fileContent = readFileContent(settingsFile);
-
-		var settingsJson;
-		try {
-			settingsJson = JSON.parse(fileContent);
-		} catch (e) {
-			alert("Unable to parse settings file. Will use default values instead");
-		}
-		
-		return settingsJson;
-	}
-
-	function saveUIvalues() {
-		var settingsFile = new File(Folder.desktop.fsName + "/" + "Clean SL.txt");
-		var settingsAsString = JSON.stringify(settings, false, 4);
-
-		saveFile(settingsFile, "txt", settingsAsString);
-	}
-
-	function getSettignsFile() {
-		var settingsFile = new File(Folder.desktop.fsName + "/" + "Clean SL.txt");
-		if (settingsFile.exists) {
-			return settingsFile;
-		} else {
-			return null;
-		}
-	}
 
 	/* HELPER FUNCTIONS */
 
@@ -766,27 +797,6 @@
 		}
 
 		return false;
-	}
-
-	function copyValuesFromObjectToObject(sourceObject, targetObject) {
-		try {
-			for (var propertyName in sourceObject) {
-				if (!sourceObject.hasOwnProperty(propertyName) ||
-					!targetObject.hasOwnProperty(propertyName)) {
-					continue;
-				}
-
-				for (var deepPropertyName in sourceObject[propertyName]) {
-					if (!sourceObject[propertyName].hasOwnProperty(deepPropertyName) ||
-						!targetObject[propertyName].hasOwnProperty(deepPropertyName)) {
-						continue;
-					}
-					targetObject[propertyName][deepPropertyName] = sourceObject[propertyName][deepPropertyName];
-				}
-			}
-		} catch (e) {
-			alert(e.toString() + "\nLine: " + e.line.toString());
-		}
 	}
 
 	/********************************************************************************/
