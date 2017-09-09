@@ -20,8 +20,10 @@
 		- Consolidate variables
 		- Give descriptive variable names
 		- Convert charID to stringID for better readability
-		- Replace stringIDToTypeID() to s2t() function
-		- Wrap to function block.
+		- Replace stringIDToTypeID() with s2t() function
+		- Wrap to function block
+		- Close Clean SL window before evaluating code
+		- Save UI data on script quit.
 
 	Released as open-source under the MIT license:
 		The MIT License (MIT)
@@ -51,7 +53,7 @@
 	var script = {
 		name: "Clean ScriptingListenerJS.log",
 		nameShort: "Clean SL",
-		version: "1.2-beta.2",
+		version: "1.2",
 		developer: {
 			name: File.decode("Tomas%20%C5%A0ink%C5%ABnas"), // Tomas Šinkūnas
 			url: "http://www.rendertom.com"
@@ -60,7 +62,7 @@
 			return this.nameShort + " v" + this.version + "\n" + "Photoshop utility tool to clean " +
 				"up ScriptingListenerJS log file. Script performs multiple actions such as cleaning-up " +
 				"variable names and hoisting them to the top, wraps code block into function, " +
-				"converts charID to string ID for better readability and such. \n\n" +
+				"converts charID to string ID and such.\n\n" +
 				"Resulting code is clean and maintains better readability.\n\n" +
 				"Developed by " + this.developer.name + "\n" + this.developer.url;
 		}
@@ -608,7 +610,7 @@
 			}
 		};
 
-		var btnRemoveJunkCode = grpRightColumn.add("button", undefined, "Remove Junk Code");
+		var btnRemoveJunkCode = grpRightColumn.add("button", undefined, "Remove junk code");
 		btnRemoveJunkCode.helpTip = "\"Junk block\" is considered a log block that contains any of these:\n\n" + junkArray.join("\n");
 		btnRemoveJunkCode.onClick = function () {
 			var cleanCode = removeJunkCode(uiControlls.etInputText.text);
@@ -636,7 +638,7 @@
 		uiControlls.charIDToStringID = grpRightColumn.add("checkbox", undefined, "Convert charID to stringID");
 		uiControlls.charIDToStringID.helpTip = "Converts charID string value to stringID value\n!!! charID's are not aware of its context and are replaced by first match";
 		uiControlls.shortStringID = grpRightColumn.add("checkbox", undefined, "Shorten stringIDToTypeID");
-		uiControlls.shortStringID.helpTip = "Globally renames stringIDToTypeID() to s2t() function";
+		uiControlls.shortStringID.helpTip = "Globally renames stringIDToTypeID() with s2t() function";
 		uiControlls.wrapToFunction = grpRightColumn.add("checkbox", undefined, "Wrap to function block");
 		uiControlls.wrapToFunction.helpTip = "Wraps entire code block to function block";
 
