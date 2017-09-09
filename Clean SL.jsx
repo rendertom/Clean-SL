@@ -20,8 +20,10 @@
 		- Consolidate variables
 		- Give descriptive variable names
 		- Convert charID to stringID for better readability
-		- Replace stringIDToTypeID() to s2t() function
-		- Wrap to function block.
+		- Replace stringIDToTypeID() with s2t() function
+		- Wrap to function block
+		- Close Clean SL window before evaluating code
+		- Save UI data on script quit.
 
 	Released as open-source under the MIT license:
 		The MIT License (MIT)
@@ -46,19 +48,12 @@
 
 (function () {
 
-	var settings = {
-		hoistVariables: true,
-		consolidateVariables: true,
-		descriptiveNames: true,
-		charIDToStringID: true,
-		shortStringID: true,
-		wrapToFunction: true
-	};
+	//@include "lib/json2.js"
 
 	var script = {
 		name: "Clean ScriptingListenerJS.log",
 		nameShort: "Clean SL",
-		version: "1.1",
+		version: "1.2",
 		developer: {
 			name: File.decode("Tomas%20%C5%A0ink%C5%ABnas"), // Tomas Šinkūnas
 			url: "http://www.rendertom.com"
@@ -67,49 +62,22 @@
 			return this.nameShort + " v" + this.version + "\n" + "Photoshop utility tool to clean " +
 				"up ScriptingListenerJS log file. Script performs multiple actions such as cleaning-up " +
 				"variable names and hoisting them to the top, wraps code block into function, " +
-				"converts charID to string ID for better readability and such. \n\n" +
+				"converts charID to string ID and such.\n\n" +
 				"Resulting code is clean and maintains better readability.\n\n" +
 				"Developed by " + this.developer.name + "\n" + this.developer.url;
 		}
 	};
 
 	var logSeparator = "// =======================================================\n";
-	var demoCode = "var idMk = charIDToTypeID( \"Mk  \" );\n" +
-		"\tvar desc4 = new ActionDescriptor();\n" +
-		"\tvar idNw = charIDToTypeID( \"Nw  \" );\n" +
-		"\t\tvar desc5 = new ActionDescriptor();\n" +
-		"\t\tvar idartboard = stringIDToTypeID( \"artboard\" );\n" +
-		"\t\tdesc5.putBoolean( idartboard, false );\n" +
-		"\t\tvar idMd = charIDToTypeID( \"Md  \" );\n" +
-		"\t\tvar idRGBM = charIDToTypeID( \"RGBM\" );\n" +
-		"\t\tdesc5.putClass( idMd, idRGBM );\n" +
-		"\t\tvar idWdth = charIDToTypeID( \"Wdth\" );\n" +
-		"\t\tvar idRlt = charIDToTypeID( \"#Rlt\" );\n" +
-		"\t\tdesc5.putUnitDouble( idWdth, idRlt, 500.000000 );\n" +
-		"\t\tvar idHght = charIDToTypeID( \"Hght\" );\n" +
-		"\t\tvar idRlt = charIDToTypeID( \"#Rlt\" );\n" +
-		"\t\tdesc5.putUnitDouble( idHght, idRlt, 500.000000 );\n" +
-		"\t\tvar idRslt = charIDToTypeID( \"Rslt\" );\n" +
-		"\t\tvar idRsl = charIDToTypeID( \"#Rsl\" );\n" +
-		"\t\tdesc5.putUnitDouble( idRslt, idRsl, 72.000000 );\n" +
-		"\t\tvar idpixelScaleFactor = stringIDToTypeID( \"pixelScaleFactor\" );\n" +
-		"\t\tdesc5.putDouble( idpixelScaleFactor, 1.000000 );\n" +
-		"\t\tvar idFl = charIDToTypeID( \"Fl  \" );\n" +
-		"\t\tvar idFl = charIDToTypeID( \"Fl  \" );\n" +
-		"\t\tvar idWht = charIDToTypeID( \"Wht \" );\n" +
-		"\t\tdesc5.putEnumerated( idFl, idFl, idWht );\n" +
-		"\t\tvar idDpth = charIDToTypeID( \"Dpth\" );\n" +
-		"\t\tdesc5.putInteger( idDpth, 8 );\n" +
-		"\t\tvar idprofile = stringIDToTypeID( \"profile\" );\n" +
-		"\t\tdesc5.putString( idprofile, \"\"\"sRGB IEC61966-2.1\"\"\" );\n" +
-		"\t\tvar idGdes = charIDToTypeID( \"Gdes\" );\n" +
-		"\t\t\tvar list1 = new ActionList();\n" +
-		"\t\tdesc5.putList( idGdes, list1 );\n" +
-		"\tvar idDcmn = charIDToTypeID( \"Dcmn\" );\n" +
-		"\tdesc4.putObject( idNw, idDcmn, desc5 );\n" +
-		"\tvar idDocI = charIDToTypeID( \"DocI\" );\n" +
-		"\tdesc4.putInteger( idDocI, 203 );\n" +
-		"executeAction( idMk, desc4, DialogModes.NO );";
+
+	var junkArray = [
+		"stringIDToTypeID( \"convertJSONdescriptor\" );",
+		"stringIDToTypeID( \"invokeCommand\" );",
+		"stringIDToTypeID( \"modalHTMLPending\" );",
+		"stringIDToTypeID( \"modalStateChanged\" );",
+		"stringIDToTypeID( \"toggleSearch\" );",
+		"stringIDToTypeID( \"toolModalStateChanged\" );"
+	];
 
 	var Incrementor = (function () {
 		var storedVariables = [],
@@ -138,7 +106,9 @@
 		}
 
 		function incrementFunctions(string) {
-			return increment(string, storedFunctions);
+			var functionName = string;
+			functionName = validateFunctionName(string);
+			return increment(functionName, storedFunctions);
 		}
 
 		function increment(string, storedArray) {
@@ -156,6 +126,15 @@
 			return newVariableVersion;
 		}
 
+		function validateFunctionName(string) {
+			var functionName = string;
+			functionName = functionName.replace(/[^a-z0-9_\$]/gi, ""); // Remove forbidden characters from function names
+			if (functionName === "")
+				functionName = "xxx";
+
+			return functionName;
+		}
+
 		return {
 			resetVariables: resetVariables,
 			resetFunctions: resetFunctions,
@@ -163,6 +142,122 @@
 			incrementFunctions: incrementFunctions
 		};
 	})();
+
+	var Settings = (function () {
+		var settings, defaultSettings, startupSettings,
+			pathToSettingsFile;
+
+		pathToSettingsFile = File($.fileName).parent.fsName + "/" + "Clean SL Settings.txt";
+		defaultSettings = {
+			hoistVariables: {
+				value: true
+			},
+			consolidateVariables: {
+				value: true
+			},
+			descriptiveNames: {
+				value: true
+			},
+			charIDToStringID: {
+				value: true
+			},
+			shortStringID: {
+				value: true
+			},
+			wrapToFunction: {
+				value: true
+			},
+			closeBeforeEval: {
+				value: true
+			},
+			saveOnQuit: {
+				value: true
+			},
+			etInputText: {
+				text: ""
+			},
+			etOutputText: {
+				text: ""
+			}
+		};
+
+		function copyObjectValues(sourceObject, targetObject) {
+			for (var propertyName in sourceObject) {
+				if (!sourceObject.hasOwnProperty(propertyName) ||
+					!targetObject.hasOwnProperty(propertyName)) {
+					continue;
+				}
+
+				for (var deepPropertyName in sourceObject[propertyName]) {
+					if (!sourceObject[propertyName].hasOwnProperty(deepPropertyName) ||
+						!targetObject[propertyName].hasOwnProperty(deepPropertyName)) {
+						continue;
+					}
+					targetObject[propertyName][deepPropertyName] = sourceObject[propertyName][deepPropertyName];
+				}
+			}
+		}
+
+		function getSettingsFromFile() {
+			var settingsFile, fileContent, settingsJson;
+
+			settingsFile = new File(pathToSettingsFile);
+			if (!settingsFile.exists) {
+				return null;
+			}
+
+			fileContent = readFileContent(settingsFile);
+
+			try {
+				settingsJson = JSON.parse(fileContent);
+			} catch (e) {
+				alert("Unable to parse settings file. Will use default values instead");
+			}
+
+			return settingsJson;
+		}
+
+		function save(data) {
+			var settingsFile, settingsAsString;
+			try {
+				settingsFile = new File(pathToSettingsFile);
+				settingsAsString = JSON.stringify(data, false, 4);
+
+				writeFile(settingsFile, settingsAsString);
+
+			} catch (e) {
+				alert(e.toString() + "\nLine: " + e.line.toString());
+			}
+		}
+
+		function saveSettings() {
+			save(settings);
+		}
+
+		function saveStartupSettings() {
+			startupSettings.saveOnQuit.value = false;
+			save(startupSettings);
+		}
+
+		function init() {
+			settings = getSettingsFromFile();
+			if (!settings) {
+				settings = defaultSettings;
+			}
+
+			startupSettings = JSON.parse(JSON.stringify(settings))
+			return settings;
+		}
+
+		return {
+			saveSettings: saveSettings,
+			saveStartupSettings: saveStartupSettings,
+			init: init,
+			copyObjectValues: copyObjectValues,
+		}
+	})();
+
+	var settings = Settings.init();
 
 	buidUI();
 
@@ -178,7 +273,7 @@
 		dirtyCodeArray = dirtyCode.split(logSeparator);
 		for (i = 0, il = dirtyCodeArray.length; i < il; i++) {
 			Incrementor.resetVariables();
-			
+
 			dirtyCodeBlock = trimSpaces(dirtyCodeArray[i]);
 			if (dirtyCodeBlock === "") continue;
 			cleanCodeBlock = main(dirtyCodeBlock);
@@ -198,13 +293,14 @@
 			string = inString;
 			string = splitToNewLines(string);
 			string = fixIndentation(string);
+			string = fixTripleQuotes(string);
 
-			if (settings.hoistVariables) string = hoistVariables(string);
-			if (settings.consolidateVariables) string = consolidateVariables(string);
-			if (settings.descriptiveNames) string = descriptiveNames(string);
-			if (settings.charIDToStringID) string = convert_CharID_to_StringID(string);
-			if (settings.shortStringID) string = shorten_stringIDToTypeID(string);
-			if (settings.wrapToFunction) string = wrapToFunction(string);
+			if (settings.hoistVariables.value) string = hoistVariables(string);
+			if (settings.consolidateVariables.value) string = consolidateVariables(string);
+			if (settings.descriptiveNames.value) string = descriptiveNames(string);
+			if (settings.charIDToStringID.value) string = convert_CharID_to_StringID(string);
+			if (settings.shortStringID.value) string = shorten_stringIDToTypeID(string);
+			if (settings.wrapToFunction.value) string = wrapToFunction(string);
 
 			return string;
 
@@ -403,6 +499,58 @@
 		return outString;
 	}
 
+	function evaluateScript(codeAsString) {
+		try {
+			eval(codeAsString);
+		} catch (e) {
+			alert("Unable to evalue script.\n" + e.toString() + "\nLine: " + e.line.toString());
+		}
+	}
+
+	function removeJunkCode(inString) {
+		try {
+			var cleanCode, cleanCodeArray = [],
+				dirtyCode, dirtyCodeArray = [],
+				isJunkBlock, numberJunksRemoved = 0,
+				alertMessage, i, il;
+
+			dirtyCodeArray = trimSpaces(inString).split(logSeparator);
+
+			for (i = 0, il = dirtyCodeArray.length; i < il; i++) {
+				dirtyCode = dirtyCodeArray[i];
+				if (trimSpaces(dirtyCode) === "") continue;
+				isJunkBlock = stringContainsArrayItems(dirtyCode, junkArray);
+				if (isJunkBlock) {
+					numberJunksRemoved++;
+				} else {
+					cleanCodeArray.push(dirtyCode);
+				}
+			}
+
+			if (numberJunksRemoved === 0) {
+				alertMessage = "All good, no junk found.";
+				cleanCode = false;
+			} else {
+				alertMessage = "Removed " + numberJunksRemoved + " junk " + ((numberJunksRemoved > 1) ? "blocks" : "block") + ".\n";
+				alertMessage += "\"Junk block\" is considered a log block that contains any of these:\n\n" + junkArray.join("\n");
+
+				if (cleanCodeArray.length === 0) {
+					cleanCode = " ";
+				} else {
+					cleanCode = (cleanCodeArray.length === 1) ? "" : logSeparator;
+					cleanCode = logSeparator + cleanCodeArray.join(logSeparator);
+				}
+			}
+
+			alert(alertMessage);
+
+			return cleanCode;
+
+		} catch (e) {
+			alert(e.toString() + "\nLine: " + e.line.toString());
+		}
+	}
+
 	/********************************************************************************/
 
 
@@ -410,6 +558,7 @@
 	/* USER INTERFACE */
 
 	function buidUI() {
+		var uiControlls = {};
 		var win = new Window("dialog", script.name + " v" + script.version, undefined, {
 			resizeable: true
 		});
@@ -418,19 +567,19 @@
 		win.orientation = "row";
 
 
-		var etInputText = win.add("edittext", undefined, "", {
+		uiControlls.etInputText = win.add("edittext", undefined, "", {
 			multiline: true
 		});
 
-		etInputText.onChange = etInputText.onChanging = function () {
-			btnExecSource.enabled = btnCleanCode.enabled = this.text !== "";
+		uiControlls.etInputText.onChange = uiControlls.etInputText.onChanging = function () {
+			btnExecSource.enabled = btnCleanCode.enabled = btnRemoveJunkCode.enabled = this.text !== "";
 		};
 
-		var etOutputText = win.add("edittext", undefined, "", {
+		uiControlls.etOutputText = win.add("edittext", undefined, "", {
 			multiline: true
 		});
 
-		etOutputText.onChange = etOutputText.onChanging = function () {
+		uiControlls.etOutputText.onChange = uiControlls.etOutputText.onChanging = function () {
 			btnSave.enabled = btnExecOutput.enabled = this.text !== "";
 		};
 
@@ -442,68 +591,91 @@
 		grpRightColumn.spacing = 2;
 
 		var btnReadFullLog = grpRightColumn.add("button", undefined, "Load full log");
+		btnReadFullLog.helpTip = "Loads entire content of \nScriptingListenerJS.log file";
 		btnReadFullLog.onClick = function () {
 			var fullLog = getFullLog();
 			if (fullLog) {
-				etInputText.text = trimSpaces(fullLog);
-				etInputText.onChanging();
+				uiControlls.etInputText.text = trimSpaces(fullLog);
+				uiControlls.etInputText.onChanging();
 			}
 		};
 
 		var btnReadLastLog = grpRightColumn.add("button", undefined, "Load last log entry");
+		btnReadLastLog.helpTip = "Loads last code entry from \nScriptingListenerJS.log file";
 		btnReadLastLog.onClick = function () {
 			var lastLogEntry = getLastLogEntry();
 			if (lastLogEntry) {
-				etInputText.text = lastLogEntry;
-				etInputText.onChanging();
+				uiControlls.etInputText.text = lastLogEntry;
+				uiControlls.etInputText.onChanging();
+			}
+		};
+
+		var btnRemoveJunkCode = grpRightColumn.add("button", undefined, "Remove junk code");
+		btnRemoveJunkCode.helpTip = "\"Junk block\" is considered a log block that contains any of these:\n\n" + junkArray.join("\n");
+		btnRemoveJunkCode.onClick = function () {
+			var cleanCode = removeJunkCode(uiControlls.etInputText.text);
+			if (cleanCode) {
+				uiControlls.etInputText.text = trimSpaces(cleanCode);
+				uiControlls.etInputText.onChanging();
 			}
 		};
 
 		var btnExecSource = grpRightColumn.add("button", undefined, "Evaluate source");
+		btnExecSource.helpTip = "Evaluates source (Action Manager) code";
 		btnExecSource.onClick = function () {
-			evaluateScript(etInputText.text);
+			if (uiControlls.closeBeforeEval.value === true) win.close();
+			evaluateScript(uiControlls.etInputText.text);
 		};
 
-		addSpace(grpRightColumn);
+		addSpace(grpRightColumn, 20);
 
-		var check = {
-			hoistVariables: grpRightColumn.add("checkbox", undefined, "Hoist variables to the top"),
-			consolidateVariables: grpRightColumn.add("checkbox", undefined, "Consolidate variables"),
-			descriptiveNames: grpRightColumn.add("checkbox", undefined, "Descriptvive variable names"),
-			charIDToStringID: grpRightColumn.add("checkbox", undefined, "Convert charID to stringID"),
-			shortStringID: grpRightColumn.add("checkbox", undefined, "Shorten stringIDToTypeID"),
-			wrapToFunction: grpRightColumn.add("checkbox", undefined, "Wrap to function block")
-		};
+		uiControlls.hoistVariables = grpRightColumn.add("checkbox", undefined, "Hoist variables to the top");
+		uiControlls.hoistVariables.helpTip = "Collects all variable declarations\nand moves them to the top of the block";
+		uiControlls.consolidateVariables = grpRightColumn.add("checkbox", undefined, "Consolidate variables");
+		uiControlls.consolidateVariables.helpTip = "Replaces each variable in the code\nwith its value";
+		uiControlls.descriptiveNames = grpRightColumn.add("checkbox", undefined, "Descriptvive variable names");
+		uiControlls.descriptiveNames.helpTip = "Renames variables by giving them\nmore descriptinve name";
+		uiControlls.charIDToStringID = grpRightColumn.add("checkbox", undefined, "Convert charID to stringID");
+		uiControlls.charIDToStringID.helpTip = "Converts charID string value to stringID value\n!!! charID's are not aware of its context and are replaced by first match";
+		uiControlls.shortStringID = grpRightColumn.add("checkbox", undefined, "Shorten stringIDToTypeID");
+		uiControlls.shortStringID.helpTip = "Globally renames stringIDToTypeID() with s2t() function";
+		uiControlls.wrapToFunction = grpRightColumn.add("checkbox", undefined, "Wrap to function block");
+		uiControlls.wrapToFunction.helpTip = "Wraps entire code block to function block";
 
-		addSpace(grpRightColumn);
+		addSpace(grpRightColumn, 10);
+
+		uiControlls.closeBeforeEval = grpRightColumn.add("checkbox", undefined, "Close before evaluating");
+		uiControlls.closeBeforeEval.helpTip = "Closes " + script.nameShort + " window before evaluating code";
+		uiControlls.saveOnQuit = grpRightColumn.add("checkbox", undefined, "Save UI data on quit");
+		uiControlls.saveOnQuit.helpTip = "Saves UI values when " + script.nameShort + " window closes";
+
+		addSpace(grpRightColumn, 20);
 
 		var btnCleanCode = grpRightColumn.add("button", undefined, "Clean Code");
+		btnCleanCode.helpTip = "Starts cleaning-up source code";
 		btnCleanCode.onClick = function () {
+			Settings.copyObjectValues(uiControlls, settings);
 
-			for (var propertyName in settings) {
-				if (!settings.hasOwnProperty(propertyName)) continue;
-				if (check.hasOwnProperty(propertyName)) {
-					settings[propertyName] = check[propertyName].value;
-				}
-			}
-
-			var finalCode = preprocess(etInputText.text);
+			var finalCode = preprocess(uiControlls.etInputText.text);
 			if (finalCode) {
-				etOutputText.text = finalCode;
-				etOutputText.onChanging();
+				uiControlls.etOutputText.text = finalCode;
+				uiControlls.etOutputText.onChanging();
 			}
 		};
 
 		var btnExecOutput = grpRightColumn.add("button", undefined, "Evaluate output");
+		btnExecOutput.helpTip = "Evaluates clean code";
 		btnExecOutput.onClick = function () {
-			evaluateScript(etOutputText.text);
+			if (uiControlls.closeBeforeEval.value === true) win.close();
+			evaluateScript(uiControlls.etOutputText.text);
 		};
 
 		var btnSave = grpRightColumn.add("button", undefined, "Save output code");
+		btnSave.helpTip = "Save clean code to file";
 		btnSave.onClick = function () {
 			var pathToFile = File.saveDialog("Save output code.");
 			if (pathToFile) {
-				saveFile(pathToFile, "txt", etOutputText.text);
+				saveFile(pathToFile, "jsx", uiControlls.etOutputText.text);
 			}
 		};
 
@@ -524,27 +696,35 @@
 		};
 
 		win.onShow = function () {
-			btnCleanCode.size.height = btnCleanCode.size.height * 1.5;
-			etInputText.text = demoCode;
-			etOutputText.onChanging();
-			etInputText.onChanging();
 
-			for (var propertyName in settings) {
-				if (!settings.hasOwnProperty(propertyName)) continue;
-				if (check.hasOwnProperty(propertyName)) {
-					check[propertyName].value = settings[propertyName];
-				}
-			}
+			Settings.copyObjectValues(settings, uiControlls);
+
+			btnCleanCode.size.height = btnCleanCode.size.height * 1.5;
+			uiControlls.etOutputText.onChanging();
+			uiControlls.etInputText.onChanging();
 
 			win.layout.layout(true);
+		};
+
+		win.onClose = function () {
+			try {
+				if (uiControlls.saveOnQuit.value === true) {
+					Settings.copyObjectValues(uiControlls, settings);
+					Settings.saveSettings();
+				} else {
+					Settings.saveStartupSettings();
+				}
+			} catch (e) {
+				alert(e.toString() + "\nLine: " + e.line.toString());
+			}
 		};
 
 		win.center();
 		win.show();
 
-		function addSpace(groupContainer) {
+		function addSpace(groupContainer, spaceSize) {
 			var grpSpacer = groupContainer.add("group");
-			grpSpacer.preferredSize.height = 20;
+			grpSpacer.preferredSize.height = spaceSize;
 		}
 	}
 
@@ -612,12 +792,13 @@
 		return readFileContent(logFile);
 	}
 
-	function evaluateScript(codeAsString) {
-		try {
-			eval(codeAsString);
-		} catch (e) {
-			alert("Unable to evalue script.\n" + e.toString() + "\nLine: " + e.line.toString());
+	function stringContainsArrayItems(string, array) {
+		for (var i = 0, il = array.length; i < il; i++) {
+			if (string.indexOf(array[i]) > -1)
+				return true;
 		}
+
+		return false;
 	}
 
 	/********************************************************************************/
@@ -651,6 +832,10 @@
 		return outString;
 	}
 
+	function fixTripleQuotes(string) {
+		return string.replace(/"""/g, "\"");
+	}
+
 	function splitToNewLines(inString, separator) {
 		var outString;
 
@@ -680,14 +865,32 @@
 
 	function readFileContent(fileObj, encoding) {
 		var fileContent;
+
 		fileObj.open("r");
 		fileObj.encoding = encoding || "utf-8";
 		fileContent = fileObj.read();
 		fileObj.close();
+
 		return fileContent;
 	}
 
-	function saveFile(fileObject, fileExtension, fileContents) {
+	function writeFile(fileObj, fileContent, encoding) {
+		encoding = encoding || "utf-8";
+		fileObj = (fileObj instanceof File) ? fileObj : new File(fileObj);
+
+		var parentFolder = fileObj.parent;
+		if (!parentFolder.exists && !parentFolder.create())
+			throw new Error("Cannot create file in path " + fileObj.fsName);
+
+		fileObj.encoding = encoding;
+		fileObj.open("w");
+		fileObj.write(fileContent);
+		fileObj.close();
+
+		return fileObj;
+	}
+
+	function saveFile(fileObject, fileExtension, fileContent) {
 		var filePath, newPath;
 
 		filePath = fileObject.toString();
@@ -697,10 +900,6 @@
 			newPath = filePath.substr(0, filePath.lastIndexOf(".")) + "." + fileExtension;
 		}
 
-		fileObject = File(newPath);
-		fileObject.open("W");
-		fileObject.encoding = "utf-8";
-		fileObject.write(fileContents);
-		fileObject.close();
+		writeFile(newPath, fileContent);
 	}
 })();
