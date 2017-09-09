@@ -589,6 +589,7 @@
 		grpRightColumn.spacing = 2;
 
 		var btnReadFullLog = grpRightColumn.add("button", undefined, "Load full log");
+		btnReadFullLog.helpTip = "Loads entire content of \nScriptingListenerJS.log file";
 		btnReadFullLog.onClick = function () {
 			var fullLog = getFullLog();
 			if (fullLog) {
@@ -598,6 +599,7 @@
 		};
 
 		var btnReadLastLog = grpRightColumn.add("button", undefined, "Load last log entry");
+		btnReadLastLog.helpTip = "Loads last code entry from \nScriptingListenerJS.log file";
 		btnReadLastLog.onClick = function () {
 			var lastLogEntry = getLastLogEntry();
 			if (lastLogEntry) {
@@ -617,6 +619,7 @@
 		};
 
 		var btnExecSource = grpRightColumn.add("button", undefined, "Evaluate source");
+		btnExecSource.helpTip = "Evaluates source (Action Manager) code";
 		btnExecSource.onClick = function () {
 			if (uiControlls.closeBeforeEval.value === true) win.close();
 			evaluateScript(uiControlls.etInputText.text);
@@ -624,21 +627,30 @@
 
 		addSpace(grpRightColumn, 20);
 
-		uiControlls.hoistVariables = grpRightColumn.add("checkbox", undefined, "Hoist variables to the top"),
-			uiControlls.consolidateVariables = grpRightColumn.add("checkbox", undefined, "Consolidate variables"),
-			uiControlls.descriptiveNames = grpRightColumn.add("checkbox", undefined, "Descriptvive variable names"),
-			uiControlls.charIDToStringID = grpRightColumn.add("checkbox", undefined, "Convert charID to stringID"),
-			uiControlls.shortStringID = grpRightColumn.add("checkbox", undefined, "Shorten stringIDToTypeID"),
-			uiControlls.wrapToFunction = grpRightColumn.add("checkbox", undefined, "Wrap to function block"),
+		uiControlls.hoistVariables = grpRightColumn.add("checkbox", undefined, "Hoist variables to the top");
+		uiControlls.hoistVariables.helpTip = "Collects all variable declarations\nand moves them to the top of the block";
+		uiControlls.consolidateVariables = grpRightColumn.add("checkbox", undefined, "Consolidate variables");
+		uiControlls.consolidateVariables.helpTip = "Replaces each variable in the code\nwith its value";
+		uiControlls.descriptiveNames = grpRightColumn.add("checkbox", undefined, "Descriptvive variable names");
+		uiControlls.descriptiveNames.helpTip = "Renames variables by giving them\nmore descriptinve name";
+		uiControlls.charIDToStringID = grpRightColumn.add("checkbox", undefined, "Convert charID to stringID");
+		uiControlls.charIDToStringID.helpTip = "Converts charID string value to stringID value\n!!! charID's are not aware of its context and are replaced by first match";
+		uiControlls.shortStringID = grpRightColumn.add("checkbox", undefined, "Shorten stringIDToTypeID");
+		uiControlls.shortStringID.helpTip = "Globally renames stringIDToTypeID() to s2t() function";
+		uiControlls.wrapToFunction = grpRightColumn.add("checkbox", undefined, "Wrap to function block");
+		uiControlls.wrapToFunction.helpTip = "Wraps entire code block to function block";
 
-			addSpace(grpRightColumn, 10);
+		addSpace(grpRightColumn, 10);
 
 		uiControlls.closeBeforeEval = grpRightColumn.add("checkbox", undefined, "Close before evaluating");
+		uiControlls.closeBeforeEval.helpTip = "Closes " + script.nameShort + " window before evaluating code";
 		uiControlls.saveOnQuit = grpRightColumn.add("checkbox", undefined, "Save UI data on quit");
+		uiControlls.saveOnQuit.helpTip = "Saves UI values when " + script.nameShort + " window closes";
 
 		addSpace(grpRightColumn, 20);
 
 		var btnCleanCode = grpRightColumn.add("button", undefined, "Clean Code");
+		btnCleanCode.helpTip = "Starts cleaning-up source code";
 		btnCleanCode.onClick = function () {
 			Settings.copyObjectValues(uiControlls, settings);
 
@@ -650,12 +662,14 @@
 		};
 
 		var btnExecOutput = grpRightColumn.add("button", undefined, "Evaluate output");
+		btnExecOutput.helpTip = "Evaluates clean code";
 		btnExecOutput.onClick = function () {
 			if (uiControlls.closeBeforeEval.value === true) win.close();
 			evaluateScript(uiControlls.etOutputText.text);
 		};
 
 		var btnSave = grpRightColumn.add("button", undefined, "Save output code");
+		btnSave.helpTip = "Save clean code to file";
 		btnSave.onClick = function () {
 			var pathToFile = File.saveDialog("Save output code.");
 			if (pathToFile) {
