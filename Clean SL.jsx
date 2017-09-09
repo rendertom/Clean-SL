@@ -211,6 +211,7 @@
 			string = inString;
 			string = splitToNewLines(string);
 			string = fixIndentation(string);
+			string = fixTripleQuotes(string);
 
 			if (settings.hoistVariables) string = hoistVariables(string);
 			if (settings.consolidateVariables) string = consolidateVariables(string);
@@ -731,6 +732,10 @@
 		outString = stringsArray.join("\n");
 
 		return outString;
+	}
+
+	function fixTripleQuotes(string) {
+		return string.replace(/"""/g,"\"");
 	}
 
 	function splitToNewLines(inString, separator) {
