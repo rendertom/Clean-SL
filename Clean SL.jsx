@@ -107,7 +107,7 @@
 
 		function incrementFunctions(string) {
 			var functionName = string;
-			functionName = validateFunctionName(string);
+			functionName = validateFunctionName(functionName);
 			return increment(functionName, storedFunctions);
 		}
 
