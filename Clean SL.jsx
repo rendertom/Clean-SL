@@ -104,7 +104,9 @@
 		}
 
 		function incrementFunctions(string) {
-			return increment(string, storedFunctions);
+			var functionName = string;
+			var functionName = validateFunctionName(string);
+			return increment(functionName, storedFunctions);
 		}
 
 		function increment(string, storedArray) {
@@ -120,6 +122,15 @@
 
 			storedArray.push(newVariableVersion);
 			return newVariableVersion;
+		}
+
+		function validateFunctionName(string) {
+			var functionName = string;
+			functionName = functionName.replace(/[^a-z0-9_\$]/gi, ""); // Remove forbidden characters from function names
+			if (functionName === "")
+				functionName = "xxx";
+
+			return functionName;
 		}
 
 		return {
@@ -161,7 +172,7 @@
 				value: true
 			},
 			etInputText: {
-				text : ""
+				text: ""
 			},
 			etOutputText: {
 				text: ""
@@ -265,7 +276,7 @@
 			saveSettings: saveSettings,
 			saveStartupSettings: saveStartupSettings,
 			init: init,
-			copyObjectValues : copyObjectValues,
+			copyObjectValues: copyObjectValues,
 		}
 	})();
 
@@ -639,13 +650,13 @@
 		addSpace(grpRightColumn, 20);
 
 		uiControlls.hoistVariables = grpRightColumn.add("checkbox", undefined, "Hoist variables to the top"),
-		uiControlls.consolidateVariables = grpRightColumn.add("checkbox", undefined, "Consolidate variables"),
-		uiControlls.descriptiveNames = grpRightColumn.add("checkbox", undefined, "Descriptvive variable names"),
-		uiControlls.charIDToStringID = grpRightColumn.add("checkbox", undefined, "Convert charID to stringID"),
-		uiControlls.shortStringID = grpRightColumn.add("checkbox", undefined, "Shorten stringIDToTypeID"),
-		uiControlls.wrapToFunction = grpRightColumn.add("checkbox", undefined, "Wrap to function block"),
+			uiControlls.consolidateVariables = grpRightColumn.add("checkbox", undefined, "Consolidate variables"),
+			uiControlls.descriptiveNames = grpRightColumn.add("checkbox", undefined, "Descriptvive variable names"),
+			uiControlls.charIDToStringID = grpRightColumn.add("checkbox", undefined, "Convert charID to stringID"),
+			uiControlls.shortStringID = grpRightColumn.add("checkbox", undefined, "Shorten stringIDToTypeID"),
+			uiControlls.wrapToFunction = grpRightColumn.add("checkbox", undefined, "Wrap to function block"),
 
-		addSpace(grpRightColumn, 10);
+			addSpace(grpRightColumn, 10);
 
 		uiControlls.closeBeforeEval = grpRightColumn.add("checkbox", undefined, "Close before evaluating");
 		uiControlls.saveOnQuit = grpRightColumn.add("checkbox", undefined, "Save UI data on quit");
