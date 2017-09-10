@@ -291,9 +291,11 @@
 			var string;
 
 			string = inString;
+
 			string = splitToNewLines(string);
 			string = fixIndentation(string);
 			string = fixTripleQuotes(string);
+			string = fixConflictingVariableDeclarations(string);
 
 			if (settings.hoistVariables.value) string = hoistVariables(string);
 			if (settings.consolidateVariables.value) string = consolidateVariables(string);
@@ -801,6 +803,89 @@
 		return false;
 	}
 
+	function getConflictingVariables(dataArray) {
+		/*
+			var example = [{
+				"idPnt": [{
+					"variableName": "idPnt",
+					"variableValue": "charIDToTypeID( \"Pnt \" )",
+					"variableLine": "var idPnt = charIDToTypeID( \"Pnt \" );"
+				}, {
+					"variableName": "idPnt",
+					"variableValue": "charIDToTypeID( \"#Pnt\" )",
+					"variableLine": "var idPnt = charIDToTypeID( \"#Pnt\" );"
+				}]
+			}, {
+				"idPntASD": [{
+					"variableName": "idPntASD",
+					"variableValue": "charIDToTypeID( \"Pnt \" )",
+					"variableLine": "\nvar idPntASD= charIDToTypeID( \"Pnt \" );"
+				}, {
+					"variableName": "idPntASD",
+					"variableValue": "charIDToTypeID( \"#Pnt\" )",
+					"variableLine": "var idPntASD = charIDToTypeID( \"#Pnt\" );"
+				}]
+			}];
+		*/
+
+		var remembered = {},
+			conflicts = {},
+			variableName,
+			variableValue,
+			variableLine,
+			hasConflicts = false,
+			isConflictingLineKnown,
+			i, il, j, jl;
+
+		for (i = 0, il = dataArray.length; i < il; i++) {
+			variableName = dataArray[i].variableName;
+			variableValue = dataArray[i].variableValue;
+			variableLine = dataArray[i].variableLine;
+
+			if (!remembered.hasOwnProperty(variableName)) {
+				remembered[variableName] = {
+					variableValue: variableValue,
+					variableLine: variableLine
+				};
+			} else {
+				if (remembered[variableName].variableLine !== variableLine) {
+					if (!conflicts.hasOwnProperty(variableName)) {
+						conflicts[variableName] = [];
+						conflicts[variableName].push({
+							variableName: variableName,
+							variableValue: remembered[variableName].variableValue,
+							variableLine: remembered[variableName].variableLine
+						});
+					}
+
+					isConflictingLineKnown = false;
+					for (j = 0, jl = conflicts[variableName].length; j < jl; j++) {
+						if (conflicts[variableName][j].variableLine === variableLine) {
+							isConflictingLineKnown = true;
+							break;
+						}
+					}
+
+					if (isConflictingLineKnown === false) {
+						conflicts[variableName].push({
+							variableName: variableName,
+							variableValue: variableValue,
+							variableLine: variableLine
+						});
+					}
+
+					hasConflicts = true;
+				}
+			}
+		}
+
+		if (hasConflicts === true) {
+			return conflicts;
+		} else {
+			return null;
+		}
+	}
+	
 	/********************************************************************************/
 
 
@@ -856,6 +941,78 @@
 			return charID;
 		}
 	}
+
+	function fixConflictingVariableDeclarations(inString) {
+		var outString,
+			codeArray,
+			conflicts,
+			newVariableName,
+			nextCodeLine,
+			variable,
+			variablesArray = [],
+			variableDeclarationLine,
+			variableDeclarationLines,
+			variableName,
+			variableValue,
+			i, il, j, jl, p, pl, n;
+			
+		outString = inString;
+		variableDeclarationLines = getVariableDeclarationLines(outString);
+
+		if (variableDeclarationLines) {
+			for (i = 0, il = variableDeclarationLines.length; i < il; i++) {
+				variableDeclarationLine = variableDeclarationLines[i];
+
+				variableName = getVariableName(variableDeclarationLine);
+				variableValue = getVariableValue(variableDeclarationLine);
+
+				variablesArray.push({
+					variableName: variableName,
+					variableValue: variableValue,
+					variableLine: variableDeclarationLine
+				});
+			}
+		}
+
+		conflicts = getConflictingVariables(variablesArray);
+		if (conflicts) {
+			codeArray = outString.split("\n");
+			for (j = 0, jl = codeArray.length; j < jl; j++) {
+				for (variable in conflicts) {
+					if (!conflicts.hasOwnProperty(variable)) continue;
+					for (p = 0, pl = conflicts[variable].length; p < pl; p++) {
+						if (codeArray[j] === conflicts[variable][p].variableLine) {
+							variableName = conflicts[variable][p].variableName;
+							variableLine = conflicts[variable][p].variableLine;
+							newVariableName = conflicts[variable][p].newVariableName;
+
+							if (!conflicts[variable][p].hasOwnProperty("newVariableLine")) {
+								newVariableName = Incrementor.incrementVariables(variableName + "_unique_");
+								conflicts[variable][p].newVariableName = newVariableName;
+								conflicts[variable][p].newVariableLine = variableLine.replace(variableName, newVariableName);
+							}
+
+							codeArray[j] = conflicts[variable][p].newVariableLine;
+
+							for (n = 0; n < 20; n++) {
+								if (codeArray[j + n + 1]) {
+									nextCodeLine = codeArray[j + n + 1];
+									if (!/\\s?var /.test(nextCodeLine) && nextCodeLine.match(variableName)) {
+										nextCodeLine = nextCodeLine.replace(variableName, newVariableName);
+										codeArray[j + n + 1] = nextCodeLine;
+										break;
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+			outString = codeArray.join("\n");
+		}
+		return outString;
+	}
+
 
 	/********************************************************************************/
 
