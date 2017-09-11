@@ -245,7 +245,7 @@
 				settings = defaultSettings;
 			}
 
-			startupSettings = JSON.parse(JSON.stringify(settings))
+			startupSettings = JSON.parse(JSON.stringify(settings));
 			return settings;
 		}
 
@@ -254,7 +254,7 @@
 			saveStartupSettings: saveStartupSettings,
 			init: init,
 			copyObjectValues: copyObjectValues,
-		}
+		};
 	})();
 
 	var settings = Settings.init();
@@ -328,8 +328,18 @@
 			for (i = 0, il = variableDeclarationLines.length; i < il; i++) {
 				outString = outString.replace(variableDeclarationLines[i] + "\n", ""); // remove from original position
 			}
+
 			// We have to separate "removing" and "adding" lines,
 			// because if it adds variableDeclaration line, it might get removed
+			// 
+			variableDeclarationLines = removeDuplicatesFromArray(variableDeclarationLines);
+			variableDeclarationLines.sort(function (a, b) {
+				a = a.toUpperCase();
+				b = b.toUpperCase();
+				if (a > b) return 1;
+				if (a < b) return -1;
+				return 0;
+			});
 			outString = variableDeclarationLines.join("\n") + "\n\n" + outString;
 		}
 
@@ -568,7 +578,7 @@
 					string = string.replace(regexExpression, shortString);
 					string = functionDeclarationString + "\n\n" + string;
 				}
-				
+
 				return string;
 			};
 
@@ -987,6 +997,20 @@
 		} else {
 			return null;
 		}
+	}
+
+	function removeDuplicatesFromArray(array) {
+		var seen = {}, out = [],
+			i = 0, j = 0, item;
+
+		for (i = 0, il = array.length; i < il; i++) {
+			item = array[i];
+			if (seen[item] !== 1) {
+				seen[item] = 1;
+				out[j++] = item;
+			}
+		}
+		return out;
 	}
 
 	/********************************************************************************/
