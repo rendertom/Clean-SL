@@ -50,6 +50,26 @@
 
 	//@include "lib/json2.js"
 
+	var predefined = {
+		junkArray: [
+			"stringIDToTypeID( \"convertJSONdescriptor\" );",
+			"stringIDToTypeID( \"invokeCommand\" );",
+			"stringIDToTypeID( \"modalHTMLPending\" );",
+			"stringIDToTypeID( \"modalStateChanged\" );",
+			"stringIDToTypeID( \"toggleSearch\" );",
+			"stringIDToTypeID( \"toolModalStateChanged\" );"
+		],
+		constructorNames: {
+			"ActionDescriptor" : "descriptor",
+			"ActionList" : "list",
+			"ActionReference" : "reference"
+		},
+		shortMethodNames: {
+			"stringIDToTypeID": "s2t",
+			"charIDToTypeID": "c2t"
+		}
+	};
+
 	var script = {
 		name: "Clean ScriptingListenerJS.log",
 		nameShort: "Clean SL",
@@ -69,15 +89,6 @@
 	};
 
 	var logSeparator = "// =======================================================\n";
-
-	var junkArray = [
-		"stringIDToTypeID( \"convertJSONdescriptor\" );",
-		"stringIDToTypeID( \"invokeCommand\" );",
-		"stringIDToTypeID( \"modalHTMLPending\" );",
-		"stringIDToTypeID( \"modalStateChanged\" );",
-		"stringIDToTypeID( \"toggleSearch\" );",
-		"stringIDToTypeID( \"toolModalStateChanged\" );"
-	];
 
 	var Incrementor = (function () {
 		var storedVariables = [],
@@ -398,23 +409,13 @@
 	function descriptiveNames(inString) {
 		var outString,
 			constructorName,
+			regexExpression,
 			variableName,
 			variableNameNew,
 			variableValue,
 			variableDeclarationLine,
 			variableDeclarationLines = [],
-			namesObject = [{
-				constructorName: "ActionDescriptor",
-				variableName: "descriptor"
-			}, {
-				constructorName: "ActionList",
-				variableName: "list"
-			}, {
-				constructorName: "ActionReference",
-				variableName: "reference"
-			}, ],
-			i, il, j, jl;
-
+			i, il;
 
 		outString = inString;
 		variableDeclarationLines = getVariableDeclarationLines(outString);
@@ -427,15 +428,18 @@
 				variableValue = getVariableValue(variableDeclarationLine);
 				variableNameNew = variableName;
 
-				for (j = 0, jl = namesObject.length; j < jl; j++) {
-					if (variableValue.match(namesObject[j].constructorName)) {
-						variableNameNew = namesObject[j].variableName;
+				for (constructorName in predefined.constructorNames) {
+					if (!predefined.constructorNames.hasOwnProperty(constructorName)) continue;
+					if (variableValue.match(constructorName)) {
+						variableNameNew = predefined.constructorNames[constructorName];
 						break;
 					}
 				}
 
 				variableNameNew = Incrementor.incrementVariables(variableNameNew);
-				outString = outString.replace(new RegExp(variableName, "g"), variableNameNew);
+
+				regexExpression = new RegExp("\\b" + variableName + "\\b", "g"); // Matches word boundry
+				outString = outString.replace(regexExpression, variableNameNew);
 			}
 		}
 
@@ -568,7 +572,7 @@
 	}
 
 	function shortMethodNames(inString) {
-		var outString,
+		var outString, functionName,
 			updateString = function (string, fullString, shortString) {
 				var functionDeclarationString, regexExpression;
 
@@ -584,8 +588,10 @@
 
 		outString = inString;
 
-		outString = updateString(outString, "stringIDToTypeID", "s2t");
-		outString = updateString(outString, "charIDToTypeID", "c2t");
+		for (functionName in predefined.shortMethodNames) {
+			if (!predefined.shortMethodNames.hasOwnProperty(functionName)) continue;
+			outString = updateString(outString, functionName, predefined.shortMethodNames[functionName]);
+		}
 
 		return outString;
 	}
@@ -634,7 +640,7 @@
 			for (i = 0, il = dirtyCodeArray.length; i < il; i++) {
 				dirtyCode = dirtyCodeArray[i];
 				if (trimSpaces(dirtyCode) === "") continue;
-				isJunkBlock = stringContainsArrayItems(dirtyCode, junkArray);
+				isJunkBlock = stringContainsArrayItems(dirtyCode, predefined.junkArray);
 				if (isJunkBlock) {
 					numberJunksRemoved++;
 				} else {
@@ -647,7 +653,7 @@
 				cleanCode = false;
 			} else {
 				alertMessage = "Removed " + numberJunksRemoved + " junk " + ((numberJunksRemoved > 1) ? "blocks" : "block") + ".\n";
-				alertMessage += "\"Junk block\" is considered a log block that contains any of these:\n\n" + junkArray.join("\n");
+				alertMessage += "\"Junk block\" is considered a log block that contains any of these:\n\n" + predefined.junkArray.join("\n");
 
 				if (cleanCodeArray.length === 0) {
 					cleanCode = " ";
@@ -726,7 +732,7 @@
 		};
 
 		var btnRemoveJunkCode = grpRightColumn.add("button", undefined, "Remove junk code");
-		btnRemoveJunkCode.helpTip = "\"Junk block\" is considered a log block that contains any of these:\n\n" + junkArray.join("\n");
+		btnRemoveJunkCode.helpTip = "\"Junk block\" is considered a log block that contains any of these:\n\n" + predefined.junkArray.join("\n");
 		btnRemoveJunkCode.onClick = function () {
 			var cleanCode = removeJunkCode(uiControlls.etInputText.text);
 			if (cleanCode) {
@@ -753,7 +759,7 @@
 		uiControlls.charIDToStringID = grpRightColumn.add("checkbox", undefined, "Convert charID to stringID");
 		uiControlls.charIDToStringID.helpTip = "Converts CharID value to StringID value.\nSkips converting particular case if CharID has conflicting StringID values";
 		uiControlls.shortMethodNames = grpRightColumn.add("checkbox", undefined, "Shorten method names");
-		uiControlls.shortMethodNames.helpTip = "Renames methods globally:\n- charIDToTypeID() with c2t();\n- stringIDToTypeID() with s2t();";
+		uiControlls.shortMethodNames.helpTip = "Renames methods globally:\n" + objectToString(predefined.shortMethodNames, "() with ", "- ", "();");
 		uiControlls.wrapToFunction = grpRightColumn.add("checkbox", undefined, "Wrap to function block");
 		uiControlls.wrapToFunction.helpTip = "Wraps entire code block to function block";
 
@@ -1000,8 +1006,11 @@
 	}
 
 	function removeDuplicatesFromArray(array) {
-		var seen = {}, out = [],
-			i = 0, j = 0, item;
+		var seen = {},
+			out = [],
+			i = 0,
+			j = 0,
+			item;
 
 		for (i = 0, il = array.length; i < il; i++) {
 			item = array[i];
@@ -1011,6 +1020,20 @@
 			}
 		}
 		return out;
+	}
+
+	function objectToString(object, separator, preString, postString) {
+		var array = [],
+			propertyName;
+
+		separator = separator || " - ";
+		preString = preString || "";
+		postString = postString || "";
+		for (propertyName in object) {
+			if (!object.hasOwnProperty(propertyName)) continue;
+			array.push(preString + propertyName + separator + object[propertyName] + postString);
+		}
+		return array.join("\n");
 	}
 
 	/********************************************************************************/
