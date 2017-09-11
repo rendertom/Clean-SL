@@ -70,6 +70,7 @@
 		},
 		printToESTK: false,
 		removeJunkOnFullLogRead: false,
+		closeAfterSaving : false,
 	};
 
 	var script = {
@@ -811,6 +812,9 @@
 			var pathToFile = File.saveDialog("Save output code.");
 			if (pathToFile) {
 				saveFile(pathToFile, "jsx", uiControlls.etOutputText.text);
+				if (predefined.closeAfterSaving === true) {
+					win.close();
+				}
 			}
 		};
 
