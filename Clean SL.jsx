@@ -68,7 +68,8 @@
 			"stringIDToTypeID": "s2t",
 			"charIDToTypeID": "c2t"
 		},
-		printToESTK: true,
+		printToESTK: false,
+		removeJunkOnFullLogRead: false,
 	};
 
 	var script = {
@@ -626,12 +627,16 @@
 		}
 	}
 
-	function removeJunkCode(inString) {
+	function removeJunkCode(inString, showAlert) {
 		try {
 			var cleanCode, cleanCodeArray = [],
 				dirtyCode, dirtyCodeArray = [],
 				isJunkBlock, numberJunksRemoved = 0,
 				alertMessage, i, il;
+
+			if (typeof showAlert === "undefined") {
+				showAlert = true;
+			}
 
 			dirtyCodeArray = trimSpaces(inString).split(logSeparator);
 
@@ -661,7 +666,8 @@
 				}
 			}
 
-			alert(alertMessage);
+			if (showAlert === true)
+				alert(alertMessage);
 
 			return cleanCode;
 
@@ -714,7 +720,12 @@
 		btnReadFullLog.onClick = function () {
 			var fullLog = getFullLog();
 			if (fullLog) {
-				uiControlls.etInputText.text = trimSpaces(fullLog);
+				var inputText = fullLog;
+				if (predefined.removeJunkOnFullLogRead === true) {
+					inputText = removeJunkCode(inputText, false);
+				}
+
+				uiControlls.etInputText.text = trimSpaces(inputText);
 				uiControlls.etInputText.onChanging();
 			}
 		};
@@ -1050,7 +1061,7 @@
 			bridge.send(5);
 		} catch (e) {}
 	}
-	
+
 	/********************************************************************************/
 
 
