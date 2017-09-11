@@ -60,14 +60,15 @@
 			"stringIDToTypeID( \"toolModalStateChanged\" );"
 		],
 		constructorNames: {
-			"ActionDescriptor" : "descriptor",
-			"ActionList" : "list",
-			"ActionReference" : "reference"
+			"ActionDescriptor": "descriptor",
+			"ActionList": "list",
+			"ActionReference": "reference"
 		},
 		shortMethodNames: {
 			"stringIDToTypeID": "s2t",
 			"charIDToTypeID": "c2t"
-		}
+		},
+		printToESTK: true,
 	};
 
 	var script = {
@@ -778,6 +779,11 @@
 			if (finalCode) {
 				uiControlls.etOutputText.text = finalCode;
 				uiControlls.etOutputText.onChanging();
+
+				if (predefined.printToESTK === true) {
+					cleanESTKconsole();
+					$.writeln(finalCode);
+				}
 			}
 		};
 
@@ -1033,6 +1039,18 @@
 		return array.join("\n");
 	}
 
+	function cleanESTKconsole() {
+		// https://forums.adobe.com/thread/1396184
+		try {
+			var bridge = new BridgeTalk();
+			bridge.target = "estoolkit-4.0";
+			bridge.body = function () {
+				app.clc();
+			}.toSource() + "()";
+			bridge.send(5);
+		} catch (e) {}
+	}
+	
 	/********************************************************************************/
 
 
