@@ -68,7 +68,7 @@
 			"stringIDToTypeID": "s2t",
 			"charIDToTypeID": "c2t"
 		},
-		printToESTK: false,
+		printToESTK: true,
 		removeJunkOnFullLogRead: false,
 		closeAfterSaving : false,
 	};
@@ -1058,7 +1058,7 @@
 		// https://forums.adobe.com/thread/1396184
 		try {
 			var bridge = new BridgeTalk();
-			bridge.target = "estoolkit-4.0";
+			bridge.target = "estoolkit";
 			bridge.body = function () {
 				app.clc();
 			}.toSource() + "()";
