@@ -434,29 +434,126 @@
 
 	function convert_CharID_to_StringID(inString) {
 		var outString,
-			regexPattern,
-			charIDWithQuotes,
-			charIDWithoutQuotes,
-			charIDArray = [],
-			stringID,
-			stringIDwithQuetes,
+			regexExpression,
+			charIDfunctions, charIDfunction, newCharIDfunction,
+			functionParts, functionStart, quote,
+			charID, stringID,
 			i, il;
 
+		// From "Get Equivalent ID Code.js" v1.7 by Michel MARIANI
+		// http://www.tonton-pixel.com/scripts/utility-scripts/get-equivalent-id-code/index.html
+		var conflictingStringIDs = {
+			"Algn": ["align", "alignment"],
+			"AntA": ["antiAlias", "antiAliasedPICTAcquire"],
+			"BckL": ["backgroundLayer", "backgroundLevel"],
+			"BlcG": ["blackGenerationType", "blackGenerationCurve"],
+			"BlcL": ["blackLevel", "blackLimit"],
+			"Blks": ["blacks", "blocks"],
+			"BlrM": ["blurMethod", "blurMore"],
+			"BrgC": ["brightnessEvent", "brightnessContrast"],
+			"BrsD": ["brushDetail", "brushesDefine"],
+			"Brsh": ["brush", "brushes"],
+			"Clcl": ["calculation", "calculations"],
+			"ClrP": ["colorPalette", "coloredPencil"],
+			"Cnst": ["constant", "constrain"],
+			"CntC": ["centerCropMarks", "conteCrayon"],
+			"Cntr": ["center", "contrast"],
+			"CrtD": ["createDroplet", "createDuplicate"],
+			"CstP": ["customPalette", "customPhosphors"],
+			"Cstm": ["custom", "customPattern"],
+			"Drkn": ["darken", "darkness"],
+			"Dstr": ["distort", "distortion", "distribute", "distribution"],
+			"Dstt": ["desaturate", "destWhiteMax"],
+			"FlIn": ["fileInfo", "fillInverse"],
+			"Gd  ": ["good", "guide"],
+			"GnrP": ["generalPreferences", "generalPrefs", "preferencesClass"],
+			"GrSt": ["grainStippled", "graySetup"],
+			"Grdn": ["gradientClassEvent", "gridMinor"],
+			"Grn ": ["grain", "green"],
+			"Grns": ["graininess", "greens"],
+			"HstP": ["historyPreferences", "historyPrefs"],
+			"HstS": ["historyState", "historyStateSourceType"],
+			"ImgP": ["imageCachePreferences", "imagePoint"],
+			"In  ": ["in", "stampIn"],
+			"IntW": ["interfaceWhite", "intersectWith"],
+			"Intr": ["interfaceIconFrameDimmed", "interlace", "interpolation", "intersect"],
+			"JPEG": ["JPEG", "JPEGFormat"],
+			"LghD": ["lightDirection", "lightDirectional"],
+			"LghO": ["lightOmni", "lightenOnly"],
+			"LghS": ["lightSource", "lightSpot"],
+			"Lns ": ["lens", "lines"],
+			"Mgnt": ["magenta", "magentas"],
+			"MrgL": ["mergeLayers", "mergedLayers"],
+			"Mxm ": ["maximum", "maximumQuality"],
+			"NTSC": ["NTSC", "NTSCColors"],
+			"NmbL": ["numberOfLayers", "numberOfLevels"],
+			"PlgP": ["pluginPicker", "pluginPrefs"],
+			"Pncl": ["pencilEraser", "pencilWidth"],
+			"Pnt ": ["paint", "point"],
+			"Prsp": ["perspective", "perspectiveIndex"],
+			"PrvM": ["previewMacThumbnail", "previewMagenta"],
+			"Pstr": ["posterization", "posterize"],
+			"RGBS": ["RGBSetup", "RGBSetupSource"],
+			"Rds ": ["radius", "reds"],
+			"ScrD": ["scratchDisks", "screenDot"],
+			"ShdI": ["shadingIntensity", "shadowIntensity"],
+			"ShpC": ["shapeCurveType", "shapingCurve"],
+			"ShrE": ["sharpenEdges", "shearEd"],
+			"Shrp": ["sharpen", "sharpness"],
+			"SplC": ["splitChannels", "supplementalCategories"],
+			"Spot": ["spot", "spotColor"],
+			"SprS": ["separationSetup", "sprayedStrokes"],
+			"StrL": ["strokeLength", "strokeLocation"],
+			"Strt": ["saturation", "start"],
+			"TEXT": ["char", "textType"],
+			"TIFF": ["TIFF", "TIFFFormat"],
+			"TglO": ["toggleOptionsPalette", "toggleOthers"],
+			"TrnG": ["transparencyGamutPreferences", "transparencyGrid", "transparencyGridSize"],
+			"TrnS": ["transferSpec", "transparencyShape", "transparencyStop"],
+			"Trns": ["transparency", "transparent"],
+			"TxtC": ["textClickPoint", "textureCoverage"],
+			"TxtF": ["textureFile", "textureFill"],
+			"UsrM": ["userMaskEnabled", "userMaskOptions"],
+			"c@#^": ["inherits", "pInherits"],
+			"comp": ["comp", "sInt64"],
+			"doub": ["floatType", "IEEE64BitFloatingPoint", "longFloat"],
+			"long": ["integer", "longInteger", "sInt32"],
+			"magn": ["magnitude", "uInt32"],
+			"null": ["null", "target"],
+			"shor": ["sInt16", "sMInt", "shortInteger"],
+			"sing": ["IEEE32BitFloatingPoint", "sMFloat", "shortFloat"],
+		};
 
 		outString = inString;
-		regexPattern = "[\"|'][\\w\\s]{4}[\"|']"; // Matches any 4 characters between quotes
-		charIDArray = outString.match(new RegExp(regexPattern, "g"));
 
-		if (charIDArray) {
-			for (i = 0, il = charIDArray.length; i < il; i++) {
-				charIDWithQuotes = trimSpaces(charIDArray[i]);
-				charIDWithoutQuotes = charIDWithQuotes.slice(1, -1);
-				stringID = charIDtoStringID(charIDWithoutQuotes);
-				stringIDwithQuetes = "\"" + stringID + "\"";
-				outString = outString.replace(charIDWithQuotes, stringIDwithQuetes);
+		// Collect all charIDToTypeID() functions in the string.
+		// We will catch `charIDToTypeID ( "xxxx` function without last quote
+		regexExpression = /charIDToTypeID\s*\(\s*?["'].{4}(?="|')/g;
+		charIDfunctions = outString.match(regexExpression);
+
+		if (charIDfunctions) {
+			for (i = 0, il = charIDfunctions.length; i < il; i++) {
+				charIDfunction = charIDfunctions[i]; // charIDToTypeID ( "xxxx
+				quote = charIDfunction.match(/["']/)[0];
+				functionParts = charIDfunction.split(quote);
+				functionStart = functionParts[0];
+				charID = functionParts[1];
+
+				// Skip if "charID" has conflicting StringID values.
+				// CharID and StringID are not a one-to-one mapping: one CharID
+				// can map to two different StringIDs. For instance:
+				// charIDToTypeID( "Grn " ) === stringIDToTypeID( "grain" ) === stringIDToTypeID( "green" )  
+				if (conflictingStringIDs.hasOwnProperty(charID))
+					continue;
+
+				functionStart = functionStart.replace("charIDToTypeID", "stringIDToTypeID");
+				stringID = charIDtoStringID(charID);
+
+				newCharIDfunction = functionStart + quote + stringID;
+				outString = outString.replace(charIDfunction, newCharIDfunction);
 			}
-			outString = outString.replace(/charIDToTypeID/g, "stringIDToTypeID");
 		}
+
 		return outString;
 	}
 
@@ -885,7 +982,7 @@
 			return null;
 		}
 	}
-	
+
 	/********************************************************************************/
 
 
@@ -955,7 +1052,7 @@
 			variableName,
 			variableValue,
 			i, il, j, jl, p, pl, n;
-			
+
 		outString = inString;
 		variableDeclarationLines = getVariableDeclarationLines(outString);
 
@@ -1012,7 +1109,6 @@
 		}
 		return outString;
 	}
-
 
 	/********************************************************************************/
 
