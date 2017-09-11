@@ -18,10 +18,11 @@
 	Options:
 		- Hoist variable declaration to the top
 		- Consolidate variables
-		- Give descriptive variable names
+		- Rename constructors
 		- Convert charID to stringID for better readability
-		- Replace stringIDToTypeID() with s2t() function
+		- Shorten method names
 		- Wrap to function block
+		- Remove Code Junk from Action Manager code
 		- Close Clean SL window before evaluating code
 		- Save UI data on script quit.
 
@@ -50,10 +51,33 @@
 
 	//@include "lib/json2.js"
 
+	var predefined = {
+		junkArray: [
+			"stringIDToTypeID( \"convertJSONdescriptor\" );",
+			"stringIDToTypeID( \"invokeCommand\" );",
+			"stringIDToTypeID( \"modalHTMLPending\" );",
+			"stringIDToTypeID( \"modalStateChanged\" );",
+			"stringIDToTypeID( \"toggleSearch\" );",
+			"stringIDToTypeID( \"toolModalStateChanged\" );"
+		],
+		constructorNames: {
+			"ActionDescriptor": "descriptor",
+			"ActionList": "list",
+			"ActionReference": "reference"
+		},
+		shortMethodNames: {
+			"stringIDToTypeID": "s2t",
+			"charIDToTypeID": "c2t"
+		},
+		printToESTK: false,
+		removeJunkOnFullLogRead: false,
+		closeAfterSaving : false,
+	};
+
 	var script = {
 		name: "Clean ScriptingListenerJS.log",
 		nameShort: "Clean SL",
-		version: "1.2",
+		version: "1.3",
 		developer: {
 			name: File.decode("Tomas%20%C5%A0ink%C5%ABnas"), // Tomas Šinkūnas
 			url: "http://www.rendertom.com"
@@ -69,15 +93,6 @@
 	};
 
 	var logSeparator = "// =======================================================\n";
-
-	var junkArray = [
-		"stringIDToTypeID( \"convertJSONdescriptor\" );",
-		"stringIDToTypeID( \"invokeCommand\" );",
-		"stringIDToTypeID( \"modalHTMLPending\" );",
-		"stringIDToTypeID( \"modalStateChanged\" );",
-		"stringIDToTypeID( \"toggleSearch\" );",
-		"stringIDToTypeID( \"toolModalStateChanged\" );"
-	];
 
 	var Incrementor = (function () {
 		var storedVariables = [],
@@ -107,7 +122,7 @@
 
 		function incrementFunctions(string) {
 			var functionName = string;
-			functionName = validateFunctionName(string);
+			functionName = validateFunctionName(functionName);
 			return increment(functionName, storedFunctions);
 		}
 
@@ -155,13 +170,13 @@
 			consolidateVariables: {
 				value: true
 			},
-			descriptiveNames: {
+			renameConstructors: {
 				value: true
 			},
 			charIDToStringID: {
 				value: true
 			},
-			shortStringID: {
+			shortMethodNames: {
 				value: true
 			},
 			wrapToFunction: {
@@ -245,7 +260,7 @@
 				settings = defaultSettings;
 			}
 
-			startupSettings = JSON.parse(JSON.stringify(settings))
+			startupSettings = JSON.parse(JSON.stringify(settings));
 			return settings;
 		}
 
@@ -254,7 +269,7 @@
 			saveStartupSettings: saveStartupSettings,
 			init: init,
 			copyObjectValues: copyObjectValues,
-		}
+		};
 	})();
 
 	var settings = Settings.init();
@@ -291,15 +306,17 @@
 			var string;
 
 			string = inString;
+
 			string = splitToNewLines(string);
 			string = fixIndentation(string);
 			string = fixTripleQuotes(string);
+			string = fixConflictingVariableDeclarations(string);
 
 			if (settings.hoistVariables.value) string = hoistVariables(string);
 			if (settings.consolidateVariables.value) string = consolidateVariables(string);
-			if (settings.descriptiveNames.value) string = descriptiveNames(string);
+			if (settings.renameConstructors.value) string = renameConstructors(string);
 			if (settings.charIDToStringID.value) string = convert_CharID_to_StringID(string);
-			if (settings.shortStringID.value) string = shorten_stringIDToTypeID(string);
+			if (settings.shortMethodNames.value) string = shortMethodNames(string);
 			if (settings.wrapToFunction.value) string = wrapToFunction(string);
 
 			return string;
@@ -326,8 +343,18 @@
 			for (i = 0, il = variableDeclarationLines.length; i < il; i++) {
 				outString = outString.replace(variableDeclarationLines[i] + "\n", ""); // remove from original position
 			}
+
 			// We have to separate "removing" and "adding" lines,
 			// because if it adds variableDeclaration line, it might get removed
+			
+			variableDeclarationLines = removeDuplicatesFromArray(variableDeclarationLines);
+			variableDeclarationLines.sort(function (a, b) {
+				a = a.toUpperCase();
+				b = b.toUpperCase();
+				if (a > b) return 1;
+				if (a < b) return -1;
+				return 0;
+			});
 			outString = variableDeclarationLines.join("\n") + "\n\n" + outString;
 		}
 
@@ -383,26 +410,16 @@
 		return outString;
 	}
 
-	function descriptiveNames(inString) {
+	function renameConstructors(inString) {
 		var outString,
 			constructorName,
+			regexExpression,
 			variableName,
 			variableNameNew,
 			variableValue,
 			variableDeclarationLine,
 			variableDeclarationLines = [],
-			namesObject = [{
-				constructorName: "ActionDescriptor",
-				variableName: "descriptor"
-			}, {
-				constructorName: "ActionList",
-				variableName: "list"
-			}, {
-				constructorName: "ActionReference",
-				variableName: "reference"
-			}, ],
-			i, il, j, jl;
-
+			i, il;
 
 		outString = inString;
 		variableDeclarationLines = getVariableDeclarationLines(outString);
@@ -413,17 +430,17 @@
 
 				variableName = getVariableName(variableDeclarationLine);
 				variableValue = getVariableValue(variableDeclarationLine);
-				variableNameNew = variableName;
 
-				for (j = 0, jl = namesObject.length; j < jl; j++) {
-					if (variableValue.match(namesObject[j].constructorName)) {
-						variableNameNew = namesObject[j].variableName;
-						break;
+				for (constructorName in predefined.constructorNames) {
+					if (!predefined.constructorNames.hasOwnProperty(constructorName)) continue;
+					if (variableValue.match(constructorName)) {
+						variableNameNew = predefined.constructorNames[constructorName];
+						variableNameNew = Incrementor.incrementVariables(variableNameNew);
+
+						regexExpression = new RegExp("\\b" + variableName + "\\b", "g"); // Matches word boundry
+						outString = outString.replace(regexExpression, variableNameNew);
 					}
 				}
-
-				variableNameNew = Incrementor.incrementVariables(variableNameNew);
-				outString = outString.replace(new RegExp(variableName, "g"), variableNameNew);
 			}
 		}
 
@@ -432,44 +449,149 @@
 
 	function convert_CharID_to_StringID(inString) {
 		var outString,
-			regexPattern,
-			charIDWithQuotes,
-			charIDWithoutQuotes,
-			charIDArray = [],
-			stringID,
-			stringIDwithQuetes,
+			regexExpression,
+			charIDfunctions, charIDfunction, newCharIDfunction,
+			functionParts, functionStart, quote,
+			charID, stringID,
 			i, il;
 
+		// From "Get Equivalent ID Code.js" v1.7 by Michel MARIANI
+		// http://www.tonton-pixel.com/scripts/utility-scripts/get-equivalent-id-code/index.html
+		var conflictingStringIDs = {
+			"Algn": ["align", "alignment"],
+			"AntA": ["antiAlias", "antiAliasedPICTAcquire"],
+			"BckL": ["backgroundLayer", "backgroundLevel"],
+			"BlcG": ["blackGenerationType", "blackGenerationCurve"],
+			"BlcL": ["blackLevel", "blackLimit"],
+			"Blks": ["blacks", "blocks"],
+			"BlrM": ["blurMethod", "blurMore"],
+			"BrgC": ["brightnessEvent", "brightnessContrast"],
+			"BrsD": ["brushDetail", "brushesDefine"],
+			"Brsh": ["brush", "brushes"],
+			"Clcl": ["calculation", "calculations"],
+			"ClrP": ["colorPalette", "coloredPencil"],
+			"Cnst": ["constant", "constrain"],
+			"CntC": ["centerCropMarks", "conteCrayon"],
+			"Cntr": ["center", "contrast"],
+			"CrtD": ["createDroplet", "createDuplicate"],
+			"CstP": ["customPalette", "customPhosphors"],
+			"Cstm": ["custom", "customPattern"],
+			"Drkn": ["darken", "darkness"],
+			"Dstr": ["distort", "distortion", "distribute", "distribution"],
+			"Dstt": ["desaturate", "destWhiteMax"],
+			"FlIn": ["fileInfo", "fillInverse"],
+			"Gd  ": ["good", "guide"],
+			"GnrP": ["generalPreferences", "generalPrefs", "preferencesClass"],
+			"GrSt": ["grainStippled", "graySetup"],
+			"Grdn": ["gradientClassEvent", "gridMinor"],
+			"Grn ": ["grain", "green"],
+			"Grns": ["graininess", "greens"],
+			"HstP": ["historyPreferences", "historyPrefs"],
+			"HstS": ["historyState", "historyStateSourceType"],
+			"ImgP": ["imageCachePreferences", "imagePoint"],
+			"In  ": ["in", "stampIn"],
+			"IntW": ["interfaceWhite", "intersectWith"],
+			"Intr": ["interfaceIconFrameDimmed", "interlace", "interpolation", "intersect"],
+			"JPEG": ["JPEG", "JPEGFormat"],
+			"LghD": ["lightDirection", "lightDirectional"],
+			"LghO": ["lightOmni", "lightenOnly"],
+			"LghS": ["lightSource", "lightSpot"],
+			"Lns ": ["lens", "lines"],
+			"Mgnt": ["magenta", "magentas"],
+			"MrgL": ["mergeLayers", "mergedLayers"],
+			"Mxm ": ["maximum", "maximumQuality"],
+			"NTSC": ["NTSC", "NTSCColors"],
+			"NmbL": ["numberOfLayers", "numberOfLevels"],
+			"PlgP": ["pluginPicker", "pluginPrefs"],
+			"Pncl": ["pencilEraser", "pencilWidth"],
+			"Pnt ": ["paint", "point"],
+			"Prsp": ["perspective", "perspectiveIndex"],
+			"PrvM": ["previewMacThumbnail", "previewMagenta"],
+			"Pstr": ["posterization", "posterize"],
+			"RGBS": ["RGBSetup", "RGBSetupSource"],
+			"Rds ": ["radius", "reds"],
+			"ScrD": ["scratchDisks", "screenDot"],
+			"ShdI": ["shadingIntensity", "shadowIntensity"],
+			"ShpC": ["shapeCurveType", "shapingCurve"],
+			"ShrE": ["sharpenEdges", "shearEd"],
+			"Shrp": ["sharpen", "sharpness"],
+			"SplC": ["splitChannels", "supplementalCategories"],
+			"Spot": ["spot", "spotColor"],
+			"SprS": ["separationSetup", "sprayedStrokes"],
+			"StrL": ["strokeLength", "strokeLocation"],
+			"Strt": ["saturation", "start"],
+			"TEXT": ["char", "textType"],
+			"TIFF": ["TIFF", "TIFFFormat"],
+			"TglO": ["toggleOptionsPalette", "toggleOthers"],
+			"TrnG": ["transparencyGamutPreferences", "transparencyGrid", "transparencyGridSize"],
+			"TrnS": ["transferSpec", "transparencyShape", "transparencyStop"],
+			"Trns": ["transparency", "transparent"],
+			"TxtC": ["textClickPoint", "textureCoverage"],
+			"TxtF": ["textureFile", "textureFill"],
+			"UsrM": ["userMaskEnabled", "userMaskOptions"],
+			"c@#^": ["inherits", "pInherits"],
+			"comp": ["comp", "sInt64"],
+			"doub": ["floatType", "IEEE64BitFloatingPoint", "longFloat"],
+			"long": ["integer", "longInteger", "sInt32"],
+			"magn": ["magnitude", "uInt32"],
+			"null": ["null", "target"],
+			"shor": ["sInt16", "sMInt", "shortInteger"],
+			"sing": ["IEEE32BitFloatingPoint", "sMFloat", "shortFloat"],
+		};
 
 		outString = inString;
-		regexPattern = "[\"|'][\\w\\s]{4}[\"|']"; // Matches any 4 characters between quotes
-		charIDArray = outString.match(new RegExp(regexPattern, "g"));
 
-		if (charIDArray) {
-			for (i = 0, il = charIDArray.length; i < il; i++) {
-				charIDWithQuotes = trimSpaces(charIDArray[i]);
-				charIDWithoutQuotes = charIDWithQuotes.slice(1, -1);
-				stringID = charIDtoStringID(charIDWithoutQuotes);
-				stringIDwithQuetes = "\"" + stringID + "\"";
-				outString = outString.replace(charIDWithQuotes, stringIDwithQuetes);
+		// Collect all charIDToTypeID() functions in the string.
+		// We will catch `charIDToTypeID ( "xxxx` function without last quote
+		regexExpression = /charIDToTypeID\s*\(\s*?["'].{4}(?="|')/g;
+		charIDfunctions = outString.match(regexExpression);
+
+		if (charIDfunctions) {
+			for (i = 0, il = charIDfunctions.length; i < il; i++) {
+				charIDfunction = charIDfunctions[i]; // charIDToTypeID ( "xxxx
+				quote = charIDfunction.match(/["']/)[0];
+				functionParts = charIDfunction.split(quote);
+				functionStart = functionParts[0];
+				charID = functionParts[1];
+
+				// Skip if "charID" has conflicting StringID values.
+				// CharID and StringID are not a one-to-one mapping: one CharID
+				// can map to two different StringIDs. For instance:
+				// charIDToTypeID( "Grn " ) === stringIDToTypeID( "grain" ) === stringIDToTypeID( "green" )  
+				if (conflictingStringIDs.hasOwnProperty(charID))
+					continue;
+
+				functionStart = functionStart.replace("charIDToTypeID", "stringIDToTypeID");
+				stringID = charIDtoStringID(charID);
+
+				newCharIDfunction = functionStart + quote + stringID;
+				outString = outString.replace(charIDfunction, newCharIDfunction);
 			}
-			outString = outString.replace(/charIDToTypeID/g, "stringIDToTypeID");
 		}
+
 		return outString;
 	}
 
-	function shorten_stringIDToTypeID(inString) {
-		var outString, functionDeclarationString,
-			regexPattern, regexExpression;
+	function shortMethodNames(inString) {
+		var outString, functionName,
+			updateString = function (string, fullString, shortString) {
+				var functionDeclarationString, regexExpression;
+
+				regexExpression = new RegExp(fullString, "g");
+				if (regexExpression.test(string)) {
+					functionDeclarationString = "var " + shortString + " = function (s) {\n\treturn app." + fullString + "(s);\n};";
+					string = string.replace(regexExpression, shortString);
+					string = functionDeclarationString + "\n\n" + string;
+				}
+
+				return string;
+			};
 
 		outString = inString;
-		functionDeclarationString = "var s2t = function (s) {\n\treturn app.stringIDToTypeID(s);\n};";
-		regexPattern = "stringIDToTypeID";
-		regexExpression = new RegExp(regexPattern, "g");
 
-		if (regexExpression.test(outString)) {
-			outString = outString.replace(regexExpression, "s2t");
-			outString = functionDeclarationString + "\n\n" + outString;
+		for (functionName in predefined.shortMethodNames) {
+			if (!predefined.shortMethodNames.hasOwnProperty(functionName)) continue;
+			outString = updateString(outString, functionName, predefined.shortMethodNames[functionName]);
 		}
 
 		return outString;
@@ -507,19 +629,23 @@
 		}
 	}
 
-	function removeJunkCode(inString) {
+	function removeJunkCode(inString, showAlert) {
 		try {
 			var cleanCode, cleanCodeArray = [],
 				dirtyCode, dirtyCodeArray = [],
 				isJunkBlock, numberJunksRemoved = 0,
 				alertMessage, i, il;
 
+			if (typeof showAlert === "undefined") {
+				showAlert = true;
+			}
+
 			dirtyCodeArray = trimSpaces(inString).split(logSeparator);
 
 			for (i = 0, il = dirtyCodeArray.length; i < il; i++) {
 				dirtyCode = dirtyCodeArray[i];
 				if (trimSpaces(dirtyCode) === "") continue;
-				isJunkBlock = stringContainsArrayItems(dirtyCode, junkArray);
+				isJunkBlock = stringContainsArrayItems(dirtyCode, predefined.junkArray);
 				if (isJunkBlock) {
 					numberJunksRemoved++;
 				} else {
@@ -532,7 +658,7 @@
 				cleanCode = false;
 			} else {
 				alertMessage = "Removed " + numberJunksRemoved + " junk " + ((numberJunksRemoved > 1) ? "blocks" : "block") + ".\n";
-				alertMessage += "\"Junk block\" is considered a log block that contains any of these:\n\n" + junkArray.join("\n");
+				alertMessage += "\"Junk block\" is considered a log block that contains any of these:\n\n" + predefined.junkArray.join("\n");
 
 				if (cleanCodeArray.length === 0) {
 					cleanCode = " ";
@@ -542,7 +668,8 @@
 				}
 			}
 
-			alert(alertMessage);
+			if (showAlert === true)
+				alert(alertMessage);
 
 			return cleanCode;
 
@@ -595,7 +722,12 @@
 		btnReadFullLog.onClick = function () {
 			var fullLog = getFullLog();
 			if (fullLog) {
-				uiControlls.etInputText.text = trimSpaces(fullLog);
+				var inputText = fullLog;
+				if (predefined.removeJunkOnFullLogRead === true) {
+					inputText = removeJunkCode(inputText, false);
+				}
+
+				uiControlls.etInputText.text = trimSpaces(inputText);
 				uiControlls.etInputText.onChanging();
 			}
 		};
@@ -611,7 +743,7 @@
 		};
 
 		var btnRemoveJunkCode = grpRightColumn.add("button", undefined, "Remove junk code");
-		btnRemoveJunkCode.helpTip = "\"Junk block\" is considered a log block that contains any of these:\n\n" + junkArray.join("\n");
+		btnRemoveJunkCode.helpTip = "\"Junk block\" is considered a log block that contains any of these:\n\n" + predefined.junkArray.join("\n");
 		btnRemoveJunkCode.onClick = function () {
 			var cleanCode = removeJunkCode(uiControlls.etInputText.text);
 			if (cleanCode) {
@@ -633,12 +765,12 @@
 		uiControlls.hoistVariables.helpTip = "Collects all variable declarations\nand moves them to the top of the block";
 		uiControlls.consolidateVariables = grpRightColumn.add("checkbox", undefined, "Consolidate variables");
 		uiControlls.consolidateVariables.helpTip = "Replaces each variable in the code\nwith its value";
-		uiControlls.descriptiveNames = grpRightColumn.add("checkbox", undefined, "Descriptvive variable names");
-		uiControlls.descriptiveNames.helpTip = "Renames variables by giving them\nmore descriptinve name";
+		uiControlls.renameConstructors = grpRightColumn.add("checkbox", undefined, "Rename constructors");
+		uiControlls.renameConstructors.helpTip = "Renames constructor variables:\n" + objectToString(predefined.constructorNames, "() as \"", "- new ", "\";");
 		uiControlls.charIDToStringID = grpRightColumn.add("checkbox", undefined, "Convert charID to stringID");
-		uiControlls.charIDToStringID.helpTip = "Converts charID string value to stringID value\n!!! charID's are not aware of its context and are replaced by first match";
-		uiControlls.shortStringID = grpRightColumn.add("checkbox", undefined, "Shorten stringIDToTypeID");
-		uiControlls.shortStringID.helpTip = "Globally renames stringIDToTypeID() with s2t() function";
+		uiControlls.charIDToStringID.helpTip = "Converts charID value to stringID value.\nSkips converting particular case if charID has conflicting stringID values";
+		uiControlls.shortMethodNames = grpRightColumn.add("checkbox", undefined, "Shorten method names");
+		uiControlls.shortMethodNames.helpTip = "Renames methods globally:\n" + objectToString(predefined.shortMethodNames, "() to ", "- ", "();");
 		uiControlls.wrapToFunction = grpRightColumn.add("checkbox", undefined, "Wrap to function block");
 		uiControlls.wrapToFunction.helpTip = "Wraps entire code block to function block";
 
@@ -660,6 +792,11 @@
 			if (finalCode) {
 				uiControlls.etOutputText.text = finalCode;
 				uiControlls.etOutputText.onChanging();
+
+				if (predefined.printToESTK === true) {
+					cleanESTKconsole();
+					$.writeln(finalCode);
+				}
 			}
 		};
 
@@ -676,6 +813,9 @@
 			var pathToFile = File.saveDialog("Save output code.");
 			if (pathToFile) {
 				saveFile(pathToFile, "jsx", uiControlls.etOutputText.text);
+				if (predefined.closeAfterSaving === true) {
+					win.close();
+				}
 			}
 		};
 
@@ -801,6 +941,132 @@
 		return false;
 	}
 
+	function getConflictingVariables(dataArray) {
+		/*
+			var example = [{
+				"idPnt": [{
+					"variableName": "idPnt",
+					"variableValue": "charIDToTypeID( \"Pnt \" )",
+					"variableLine": "var idPnt = charIDToTypeID( \"Pnt \" );"
+				}, {
+					"variableName": "idPnt",
+					"variableValue": "charIDToTypeID( \"#Pnt\" )",
+					"variableLine": "var idPnt = charIDToTypeID( \"#Pnt\" );"
+				}]
+			}, {
+				"idPntASD": [{
+					"variableName": "idPntASD",
+					"variableValue": "charIDToTypeID( \"Pnt \" )",
+					"variableLine": "\nvar idPntASD= charIDToTypeID( \"Pnt \" );"
+				}, {
+					"variableName": "idPntASD",
+					"variableValue": "charIDToTypeID( \"#Pnt\" )",
+					"variableLine": "var idPntASD = charIDToTypeID( \"#Pnt\" );"
+				}]
+			}];
+		*/
+
+		var remembered = {},
+			conflicts = {},
+			variableName,
+			variableValue,
+			variableLine,
+			hasConflicts = false,
+			isConflictingLineKnown,
+			i, il, j, jl;
+
+		for (i = 0, il = dataArray.length; i < il; i++) {
+			variableName = dataArray[i].variableName;
+			variableValue = dataArray[i].variableValue;
+			variableLine = dataArray[i].variableLine;
+
+			if (!remembered.hasOwnProperty(variableName)) {
+				remembered[variableName] = {
+					variableValue: variableValue,
+					variableLine: variableLine
+				};
+			} else {
+				if (remembered[variableName].variableLine !== variableLine) {
+					if (!conflicts.hasOwnProperty(variableName)) {
+						conflicts[variableName] = [];
+						conflicts[variableName].push({
+							variableName: variableName,
+							variableValue: remembered[variableName].variableValue,
+							variableLine: remembered[variableName].variableLine
+						});
+					}
+
+					isConflictingLineKnown = false;
+					for (j = 0, jl = conflicts[variableName].length; j < jl; j++) {
+						if (conflicts[variableName][j].variableLine === variableLine) {
+							isConflictingLineKnown = true;
+							break;
+						}
+					}
+
+					if (isConflictingLineKnown === false) {
+						conflicts[variableName].push({
+							variableName: variableName,
+							variableValue: variableValue,
+							variableLine: variableLine
+						});
+					}
+
+					hasConflicts = true;
+				}
+			}
+		}
+
+		if (hasConflicts === true) {
+			return conflicts;
+		} else {
+			return null;
+		}
+	}
+
+	function removeDuplicatesFromArray(array) {
+		var seen = {},
+			out = [],
+			i = 0,
+			j = 0,
+			item;
+
+		for (i = 0, il = array.length; i < il; i++) {
+			item = array[i];
+			if (seen[item] !== 1) {
+				seen[item] = 1;
+				out[j++] = item;
+			}
+		}
+		return out;
+	}
+
+	function objectToString(object, separator, preString, postString) {
+		var array = [],
+			propertyName;
+
+		separator = separator || " - ";
+		preString = preString || "";
+		postString = postString || "";
+		for (propertyName in object) {
+			if (!object.hasOwnProperty(propertyName)) continue;
+			array.push(preString + propertyName + separator + object[propertyName] + postString);
+		}
+		return array.join("\n");
+	}
+
+	function cleanESTKconsole() {
+		// https://forums.adobe.com/thread/1396184
+		try {
+			var bridge = new BridgeTalk();
+			bridge.target = "estoolkit";
+			bridge.body = function () {
+				app.clc();
+			}.toSource() + "()";
+			bridge.send(5);
+		} catch (e) {}
+	}
+
 	/********************************************************************************/
 
 
@@ -855,6 +1121,77 @@
 			alert("Unable to convert \"" + charID + "\" to StringID\n" + e.toString() + "\nLine: " + e.line.toString() + "\n" + charID);
 			return charID;
 		}
+	}
+
+	function fixConflictingVariableDeclarations(inString) {
+		var outString,
+			codeArray,
+			conflicts,
+			newVariableName,
+			nextCodeLine,
+			variable,
+			variablesArray = [],
+			variableDeclarationLine,
+			variableDeclarationLines,
+			variableName,
+			variableValue,
+			i, il, j, jl, p, pl, n;
+
+		outString = inString;
+		variableDeclarationLines = getVariableDeclarationLines(outString);
+
+		if (variableDeclarationLines) {
+			for (i = 0, il = variableDeclarationLines.length; i < il; i++) {
+				variableDeclarationLine = variableDeclarationLines[i];
+
+				variableName = getVariableName(variableDeclarationLine);
+				variableValue = getVariableValue(variableDeclarationLine);
+
+				variablesArray.push({
+					variableName: variableName,
+					variableValue: variableValue,
+					variableLine: variableDeclarationLine
+				});
+			}
+		}
+
+		conflicts = getConflictingVariables(variablesArray);
+		if (conflicts) {
+			codeArray = outString.split("\n");
+			for (j = 0, jl = codeArray.length; j < jl; j++) {
+				for (variable in conflicts) {
+					if (!conflicts.hasOwnProperty(variable)) continue;
+					for (p = 0, pl = conflicts[variable].length; p < pl; p++) {
+						if (codeArray[j] === conflicts[variable][p].variableLine) {
+							variableName = conflicts[variable][p].variableName;
+							variableLine = conflicts[variable][p].variableLine;
+							newVariableName = conflicts[variable][p].newVariableName;
+
+							if (!conflicts[variable][p].hasOwnProperty("newVariableLine")) {
+								newVariableName = Incrementor.incrementVariables(variableName + "_unique_");
+								conflicts[variable][p].newVariableName = newVariableName;
+								conflicts[variable][p].newVariableLine = variableLine.replace(variableName, newVariableName);
+							}
+
+							codeArray[j] = conflicts[variable][p].newVariableLine;
+
+							for (n = 0; n < 20; n++) {
+								if (codeArray[j + n + 1]) {
+									nextCodeLine = codeArray[j + n + 1];
+									if (!/\\s?var /.test(nextCodeLine) && nextCodeLine.match(variableName)) {
+										nextCodeLine = nextCodeLine.replace(variableName, newVariableName);
+										codeArray[j + n + 1] = nextCodeLine;
+										break;
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+			outString = codeArray.join("\n");
+		}
+		return outString;
 	}
 
 	/********************************************************************************/
