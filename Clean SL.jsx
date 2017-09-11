@@ -161,7 +161,7 @@
 			charIDToStringID: {
 				value: true
 			},
-			shortStringID: {
+			shortMethodNames: {
 				value: true
 			},
 			wrapToFunction: {
@@ -301,7 +301,7 @@
 			if (settings.consolidateVariables.value) string = consolidateVariables(string);
 			if (settings.descriptiveNames.value) string = descriptiveNames(string);
 			if (settings.charIDToStringID.value) string = convert_CharID_to_StringID(string);
-			if (settings.shortStringID.value) string = shorten_stringIDToTypeID(string);
+			if (settings.shortMethodNames.value) string = shortMethodNames(string);
 			if (settings.wrapToFunction.value) string = wrapToFunction(string);
 
 			return string;
@@ -557,19 +557,25 @@
 		return outString;
 	}
 
-	function shorten_stringIDToTypeID(inString) {
-		var outString, functionDeclarationString,
-			regexPattern, regexExpression;
+	function shortMethodNames(inString) {
+		var outString,
+			updateString = function (string, fullString, shortString) {
+				var functionDeclarationString, regexExpression;
+
+				regexExpression = new RegExp(fullString, "g");
+				if (regexExpression.test(string)) {
+					functionDeclarationString = "var " + shortString + " = function (s) {\n\treturn app." + fullString + "(s);\n};";
+					string = string.replace(regexExpression, shortString);
+					string = functionDeclarationString + "\n\n" + string;
+				}
+				
+				return string;
+			};
 
 		outString = inString;
-		functionDeclarationString = "var s2t = function (s) {\n\treturn app.stringIDToTypeID(s);\n};";
-		regexPattern = "stringIDToTypeID";
-		regexExpression = new RegExp(regexPattern, "g");
 
-		if (regexExpression.test(outString)) {
-			outString = outString.replace(regexExpression, "s2t");
-			outString = functionDeclarationString + "\n\n" + outString;
-		}
+		outString = updateString(outString, "stringIDToTypeID", "s2t");
+		outString = updateString(outString, "charIDToTypeID", "c2t");
 
 		return outString;
 	}
@@ -735,9 +741,9 @@
 		uiControlls.descriptiveNames = grpRightColumn.add("checkbox", undefined, "Descriptvive variable names");
 		uiControlls.descriptiveNames.helpTip = "Renames variables by giving them\nmore descriptinve name";
 		uiControlls.charIDToStringID = grpRightColumn.add("checkbox", undefined, "Convert charID to stringID");
-		uiControlls.charIDToStringID.helpTip = "Converts charID string value to stringID value\n!!! charID's are not aware of its context and are replaced by first match";
-		uiControlls.shortStringID = grpRightColumn.add("checkbox", undefined, "Shorten stringIDToTypeID");
-		uiControlls.shortStringID.helpTip = "Globally renames stringIDToTypeID() with s2t() function";
+		uiControlls.charIDToStringID.helpTip = "Converts CharID value to StringID value.\nSkips converting particular case if CharID has conflicting StringID values";
+		uiControlls.shortMethodNames = grpRightColumn.add("checkbox", undefined, "Shorten method names");
+		uiControlls.shortMethodNames.helpTip = "Renames methods globally:\n- charIDToTypeID() with c2t();\n- stringIDToTypeID() with s2t();";
 		uiControlls.wrapToFunction = grpRightColumn.add("checkbox", undefined, "Wrap to function block");
 		uiControlls.wrapToFunction.helpTip = "Wraps entire code block to function block";
 
