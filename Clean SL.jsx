@@ -166,7 +166,7 @@
 			consolidateVariables: {
 				value: true
 			},
-			descriptiveNames: {
+			renameConstructors: {
 				value: true
 			},
 			charIDToStringID: {
@@ -310,7 +310,7 @@
 
 			if (settings.hoistVariables.value) string = hoistVariables(string);
 			if (settings.consolidateVariables.value) string = consolidateVariables(string);
-			if (settings.descriptiveNames.value) string = descriptiveNames(string);
+			if (settings.renameConstructors.value) string = renameConstructors(string);
 			if (settings.charIDToStringID.value) string = convert_CharID_to_StringID(string);
 			if (settings.shortMethodNames.value) string = shortMethodNames(string);
 			if (settings.wrapToFunction.value) string = wrapToFunction(string);
@@ -406,7 +406,7 @@
 		return outString;
 	}
 
-	function descriptiveNames(inString) {
+	function renameConstructors(inString) {
 		var outString,
 			constructorName,
 			regexExpression,
@@ -426,20 +426,17 @@
 
 				variableName = getVariableName(variableDeclarationLine);
 				variableValue = getVariableValue(variableDeclarationLine);
-				variableNameNew = variableName;
 
 				for (constructorName in predefined.constructorNames) {
 					if (!predefined.constructorNames.hasOwnProperty(constructorName)) continue;
 					if (variableValue.match(constructorName)) {
 						variableNameNew = predefined.constructorNames[constructorName];
-						break;
+						variableNameNew = Incrementor.incrementVariables(variableNameNew);
+
+						regexExpression = new RegExp("\\b" + variableName + "\\b", "g"); // Matches word boundry
+						outString = outString.replace(regexExpression, variableNameNew);
 					}
 				}
-
-				variableNameNew = Incrementor.incrementVariables(variableNameNew);
-
-				regexExpression = new RegExp("\\b" + variableName + "\\b", "g"); // Matches word boundry
-				outString = outString.replace(regexExpression, variableNameNew);
 			}
 		}
 
@@ -754,8 +751,8 @@
 		uiControlls.hoistVariables.helpTip = "Collects all variable declarations\nand moves them to the top of the block";
 		uiControlls.consolidateVariables = grpRightColumn.add("checkbox", undefined, "Consolidate variables");
 		uiControlls.consolidateVariables.helpTip = "Replaces each variable in the code\nwith its value";
-		uiControlls.descriptiveNames = grpRightColumn.add("checkbox", undefined, "Descriptvive variable names");
-		uiControlls.descriptiveNames.helpTip = "Renames variables by giving them\nmore descriptinve name";
+		uiControlls.renameConstructors = grpRightColumn.add("checkbox", undefined, "Rename constructors");
+		uiControlls.renameConstructors.helpTip = "Renames constructor variables:\n" + objectToString(predefined.constructorNames, "() as \"", "- new ", "\";");
 		uiControlls.charIDToStringID = grpRightColumn.add("checkbox", undefined, "Convert charID to stringID");
 		uiControlls.charIDToStringID.helpTip = "Converts CharID value to StringID value.\nSkips converting particular case if CharID has conflicting StringID values";
 		uiControlls.shortMethodNames = grpRightColumn.add("checkbox", undefined, "Shorten method names");
