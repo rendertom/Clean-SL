@@ -18,10 +18,11 @@
 	Options:
 		- Hoist variable declaration to the top
 		- Consolidate variables
-		- Give descriptive variable names
+		- Rename constructors
 		- Convert charID to stringID for better readability
-		- Replace stringIDToTypeID() with s2t() function
+		- Shorten method names
 		- Wrap to function block
+		- Remove Code Junk from Action Manager code
 		- Close Clean SL window before evaluating code
 		- Save UI data on script quit.
 
@@ -68,7 +69,7 @@
 			"stringIDToTypeID": "s2t",
 			"charIDToTypeID": "c2t"
 		},
-		printToESTK: true,
+		printToESTK: false,
 		removeJunkOnFullLogRead: false,
 		closeAfterSaving : false,
 	};
@@ -76,7 +77,7 @@
 	var script = {
 		name: "Clean ScriptingListenerJS.log",
 		nameShort: "Clean SL",
-		version: "1.2",
+		version: "1.3",
 		developer: {
 			name: File.decode("Tomas%20%C5%A0ink%C5%ABnas"), // Tomas Šinkūnas
 			url: "http://www.rendertom.com"
@@ -345,7 +346,7 @@
 
 			// We have to separate "removing" and "adding" lines,
 			// because if it adds variableDeclaration line, it might get removed
-			// 
+			
 			variableDeclarationLines = removeDuplicatesFromArray(variableDeclarationLines);
 			variableDeclarationLines.sort(function (a, b) {
 				a = a.toUpperCase();
@@ -767,9 +768,9 @@
 		uiControlls.renameConstructors = grpRightColumn.add("checkbox", undefined, "Rename constructors");
 		uiControlls.renameConstructors.helpTip = "Renames constructor variables:\n" + objectToString(predefined.constructorNames, "() as \"", "- new ", "\";");
 		uiControlls.charIDToStringID = grpRightColumn.add("checkbox", undefined, "Convert charID to stringID");
-		uiControlls.charIDToStringID.helpTip = "Converts CharID value to StringID value.\nSkips converting particular case if CharID has conflicting StringID values";
+		uiControlls.charIDToStringID.helpTip = "Converts charID value to stringID value.\nSkips converting particular case if charID has conflicting stringID values";
 		uiControlls.shortMethodNames = grpRightColumn.add("checkbox", undefined, "Shorten method names");
-		uiControlls.shortMethodNames.helpTip = "Renames methods globally:\n" + objectToString(predefined.shortMethodNames, "() with ", "- ", "();");
+		uiControlls.shortMethodNames.helpTip = "Renames methods globally:\n" + objectToString(predefined.shortMethodNames, "() to ", "- ", "();");
 		uiControlls.wrapToFunction = grpRightColumn.add("checkbox", undefined, "Wrap to function block");
 		uiControlls.wrapToFunction.helpTip = "Wraps entire code block to function block";
 

@@ -90,6 +90,14 @@ function make() {
 ```
 
 ### Change log: ###
+* v1.3 - 2017 09 12 : _Please remove old Clean SL Settings.txt file before using this update_
+	* Renames "Descriptive variable name" to "Rename constructors"
+	* Renames "Shorten stringIDToTypeID" to "Shorten method names"
+	* Exposes "predefined" object with variables for user to change in code
+	* Removes duplicate variable declarations and sorts them alphabetically when hoisting
+	* "Shorten method names" shortens both charIDToTypeID() and stringIDToTypeID()
+	* Skips converting charIDtoStringID() if CharID has conflicting StringID values
+	* Parses variable declarations to check if same variable has different values
 * v1.2 - 2017 09 10 :
 	* Adds option to remove Action Managers junk code
 	* Adds option to close Clean SL script before evaluating code
