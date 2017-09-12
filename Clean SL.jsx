@@ -561,9 +561,12 @@
 				if (conflictingStringIDs.hasOwnProperty(charID))
 					continue;
 
-				functionStart = functionStart.replace("charIDToTypeID", "stringIDToTypeID");
+				// Skip if CharID does not have corresponding StringID
 				stringID = charIDtoStringID(charID);
+				if (!stringID)
+					continue;
 
+				functionStart = functionStart.replace("charIDToTypeID", "stringIDToTypeID");
 				newCharIDfunction = functionStart + quote + stringID;
 				outString = outString.replace(charIDfunction, newCharIDfunction);
 			}
@@ -768,7 +771,7 @@
 		uiControlls.renameConstructors = grpRightColumn.add("checkbox", undefined, "Rename constructors");
 		uiControlls.renameConstructors.helpTip = "Renames constructor variables:\n" + objectToString(predefined.constructorNames, "() as \"", "- new ", "\";");
 		uiControlls.charIDToStringID = grpRightColumn.add("checkbox", undefined, "Convert charID to stringID");
-		uiControlls.charIDToStringID.helpTip = "Converts charID value to stringID value.\nSkips converting particular case if charID has conflicting stringID values";
+		uiControlls.charIDToStringID.helpTip = "Converts charID value to stringID value.\nSkips converting particular case if charID has conflicting stringID values or does not have corresponding StringID at all";
 		uiControlls.shortMethodNames = grpRightColumn.add("checkbox", undefined, "Shorten method names");
 		uiControlls.shortMethodNames.helpTip = "Renames methods globally:\n" + objectToString(predefined.shortMethodNames, "() to ", "- ", "();");
 		uiControlls.wrapToFunction = grpRightColumn.add("checkbox", undefined, "Wrap to function block");
@@ -1114,13 +1117,25 @@
 		return outString;
 	}
 
+	// function charIDtoStringID(charID) {
+	// 	try {
+	// 		return typeIDToStringID(charIDToTypeID(charID));
+	// 	} catch (e) {
+	// 		alert("Unable to convert \"" + charID + "\" to StringID\n" + e.toString() + "\nLine: " + e.line.toString() + "\n" + charID);
+	// 		return charID;
+	// 	}
+	// }
+
 	function charIDtoStringID(charID) {
+		var stringID;
 		try {
-			return typeIDToStringID(charIDToTypeID(charID));
-		} catch (e) {
-			alert("Unable to convert \"" + charID + "\" to StringID\n" + e.toString() + "\nLine: " + e.line.toString() + "\n" + charID);
-			return charID;
-		}
+			stringID = typeIDToStringID(charIDToTypeID(charID));
+			if (stringID === "") {
+				stringID = null;
+			}
+		} catch (e) {}
+		
+		return stringID;
 	}
 
 	function fixConflictingVariableDeclarations(inString) {
