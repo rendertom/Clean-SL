@@ -90,6 +90,9 @@ function make() {
 ```
 
 ### Change log: ###
+* v1.3.1 - 2017 09 13 :
+	* Skips converting CharID to StringID if CharID does not have corresponding StringID;
+	* Validates function and variable names against reserved JS words.
 * v1.3 - 2017 09 12 : _Please remove old Clean SL Settings.txt file before using this update_
 	* Renames "Descriptive variable name" to "Rename constructors"
 	* Renames "Shorten stringIDToTypeID" to "Shorten method names"

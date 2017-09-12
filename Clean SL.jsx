@@ -77,7 +77,7 @@
 	var script = {
 		name: "Clean ScriptingListenerJS.log",
 		nameShort: "Clean SL",
-		version: "1.3",
+		version: "1.3.1",
 		developer: {
 			name: File.decode("Tomas%20%C5%A0ink%C5%ABnas"), // Tomas Šinkūnas
 			url: "http://www.rendertom.com"
