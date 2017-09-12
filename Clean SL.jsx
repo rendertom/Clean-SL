@@ -71,7 +71,7 @@
 		},
 		printToESTK: false,
 		removeJunkOnFullLogRead: false,
-		closeAfterSaving : false,
+		closeAfterSaving: false,
 	};
 
 	var script = {
@@ -95,8 +95,16 @@
 	var logSeparator = "// =======================================================\n";
 
 	var Incrementor = (function () {
-		var storedVariables = [],
-			storedFunctions = [];
+		var storedFunctions = [],
+			storedVariables = [],
+			reservedWords = ["abstract", "arguments", "boolean", "break", "byte", "case", "catch", "char", "class", "const", "continue", "debugger", "default", "delete",
+				"do", "double", "else", "enum", "eval", "export", "extends", "false", "final", "finally", "float", "for", "function", "goto", "if", "implements", "import",
+				"in", "instanceof", "int", "interface", "let", "long", "native", "new", "null", "package", "private", "protected", "public", "return", "short", "static",
+				"super", "switch", "synchronized", "this", "throw", "throws", "transient", "true", "try", "typeof", "var", "void", "volatile", "while", "with", "yield",
+				"Array", "Date", "hasOwnProperty", "Infinity", "isFinite", "isNaN", "isPrototypeOf", "length", "Math", "NaN", "name", "Number", "Object", "prototype",
+				"String", "toString", "undefined", "valueOf", "getClass", "java", "JavaArray", "javaClass", "JavaObject", "JavaPackage"
+			];
+
 
 		function contains(arr, value) {
 			var i, il;
@@ -109,26 +117,27 @@
 		}
 
 		function resetVariables() {
-			storedVariables = [];
+			storedVariables = reservedWords.slice(0);
 		}
 
 		function resetFunctions() {
-			storedFunctions = [];
+			storedFunctions = reservedWords.slice(0);
 		}
 
 		function incrementVariables(string) {
-			return increment(string, storedVariables);
+			var variableName = string;
+			variableName = validateName(variableName);
+			return increment(variableName, storedVariables);
 		}
 
 		function incrementFunctions(string) {
 			var functionName = string;
-			functionName = validateFunctionName(functionName);
+			functionName = validateName(functionName);
 			return increment(functionName, storedFunctions);
 		}
 
 		function increment(string, storedArray) {
 			var coreName, newVariableVersion, versionNumber;
-
 			coreName = string.replace(/\d+$/, "");
 			newVariableVersion = coreName;
 			versionNumber = 2;
@@ -141,9 +150,9 @@
 			return newVariableVersion;
 		}
 
-		function validateFunctionName(string) {
+		function validateName(string) {
 			var functionName = string;
-			functionName = functionName.replace(/[^a-z0-9_\$]/gi, ""); // Remove forbidden characters from function names
+			functionName = functionName.replace(/[^\w_\$]/gi, ""); // Remove forbidden characters from function names
 			if (functionName === "")
 				functionName = "xxx";
 
@@ -346,7 +355,7 @@
 
 			// We have to separate "removing" and "adding" lines,
 			// because if it adds variableDeclaration line, it might get removed
-			
+
 			variableDeclarationLines = removeDuplicatesFromArray(variableDeclarationLines);
 			variableDeclarationLines.sort(function (a, b) {
 				a = a.toUpperCase();
@@ -1117,15 +1126,6 @@
 		return outString;
 	}
 
-	// function charIDtoStringID(charID) {
-	// 	try {
-	// 		return typeIDToStringID(charIDToTypeID(charID));
-	// 	} catch (e) {
-	// 		alert("Unable to convert \"" + charID + "\" to StringID\n" + e.toString() + "\nLine: " + e.line.toString() + "\n" + charID);
-	// 		return charID;
-	// 	}
-	// }
-
 	function charIDtoStringID(charID) {
 		var stringID;
 		try {
@@ -1134,7 +1134,7 @@
 				stringID = null;
 			}
 		} catch (e) {}
-		
+
 		return stringID;
 	}
 
