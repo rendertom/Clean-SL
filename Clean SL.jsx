@@ -72,14 +72,53 @@
 		printToESTK: false,
 		removeJunkOnFullLogRead: false,
 		closeAfterSaving: false,
-		constructorMethods: [
+		descriptorMethods: [
 			"putBoolean",
-			"putUnitDouble",
+			"putPath",
 			"putDouble",
 			"putInteger",
-			"putString"
+			"putString",
+			"putUnitDouble",
+			// "clear", // - nothing - Clears the descriptor.
+			// "erase", // - key - Erases a key from the descriptor.
+			// "fromStream", // - value - Creates a descriptor from a stream of bytes; for reading from disk.
+			// "getBoolean", // - key - Gets the value of a key of type boolean.
+			// "getClass", // - key - Gets the value of a key of type class.
+			// "getData", // - key - Gets raw byte data as a string value.
+			// "getDouble", // - key - Gets the value of a key of type double.
+			// "getEnumerationType", // - key - Gets the enumeration type of a key.
+			// "getEnumerationValue", // - key - Gets the enumeration value of a key.
+			// "getInteger", // - key - Gets the value of a key of type integer.
+			// "getKey", // - index - Gets the ID of the Nth key, provided by index.
+			// "getLargeInteger", // - key - Gets the value of a key of type large integer.
+			// "getList", // - key - Gets the value of a key of type list.
+			// "getObjectType", // - key - Gets the class ID of an object in a key of type object.
+			// "getObjectValue", // - key - Gets the value of a key of type object.
+			// "getPath", // - key - Gets the value of a key of type File.
+			// "getReference", // - key - Gets the value of a key of type ActionReference.
+			// "getString", // - key - Gets the value of a key of type string.
+			// "getType", // - key - Gets the type of a key.
+			// "getUnitDoubleType", // - key - Gets the unit type of a key of type UnitDouble.
+			// "getUnitDoubleValue", // - Gets the value of a key of type UnitDouble.
+			// "hasKey", // - key - Checks whether the descriptor contains the provided key.
+			// "isEqual", // - Determines whether the descriptor is the same as another descriptor.
+			"putBoolean", // - key, value - Sets the value for a key whose type is boolean.
+			// "putClass", // - key, value - Sets the value for a key whose type is class.
+			// "putData", // - key, value - Puts raw byte data as a string value.
+			"putDouble", // - key, value - Sets the value for a key whose type is double.
+			// "putEnumerated", // - key, enumType, value - Sets the enumeration type and value for a key.
+			"putInteger", // - key, value - Sets the value for a key whose type is integer.
+			"putLargeInteger", // - key, value - Sets the value for a key whose type is large integer.
+			// "putList", // - key, value - Sets the value for a key whose type is an ActionList object.
+			// "putObject", // - key, classID, value - Sets the value for a key whose type is an object, represented by an Action Descriptor.
+			"putPath", // - key, value - Sets the value for a key whose type is path.
+			// "putReference", // - key, value - Sets the value for a key whose type is an object reference.
+			"putString", // - key, value - Sets the value for a key whose type is string.
+			"putUnitDouble", // - key, unitID, value - Sets the value for a key whose type is a unit value formatted as a double.
+			// "toStream", // - nothing - Gets the entire descriptor as a stream of bytes, for writing to disk.
+
 		],
-		ignoreList: [
+		ignoreKeyList: [
 			"DocI", "documentID",
 			"kcanDispatchWhileModal",
 			"level",
@@ -210,6 +249,9 @@
 				value: true
 			},
 			wrapToFunction: {
+				value: true
+			},
+			extractParameters: {
 				value: true
 			},
 			closeBeforeEval: {
@@ -347,7 +389,7 @@
 			if (settings.renameConstructors.value) string = renameConstructors(string);
 			if (settings.charIDToStringID.value) string = convert_CharID_to_StringID(string);
 			if (settings.shortMethodNames.value) string = shortMethodNames(string);
-			if (settings.wrapToFunction.value) string = wrapToFunction(string);
+			if (settings.wrapToFunction.value) string = wrapToFunction(string, settings.extractParameters.value);
 			return string;
 
 		} catch (e) {
@@ -643,7 +685,7 @@
 		return values;
 	}
 
-	function wrapToFunction(inString) {
+	function wrapToFunction(inString, toExtractParameters) {
 		var outString,
 			functionName,
 			functionBlock,
@@ -656,8 +698,7 @@
 
 		outString = inString;
 
-		var toExtract = true;
-		if (toExtract === true) {
+		if (toExtractParameters === true) {
 			methodParameters = getMethodParameters(outString);
 			outString = methodParameters.outString;
 			parameterNames = getFields(methodParameters.parameters, "methodKey").join(", ");
@@ -696,8 +737,8 @@
 
 		for (i = 0, il = codeArray.length; i < il; i++) {
 			codeLine = codeArray[i];
-			for (j = 0, jl = predefined.constructorMethods.length; j < jl; j++) {
-				constructorMethodRegex = new RegExp("\\.\\b" + predefined.constructorMethods[j] + "\\b\\W");
+			for (j = 0, jl = predefined.descriptorMethods.length; j < jl; j++) {
+				constructorMethodRegex = new RegExp("\\.\\b" + predefined.descriptorMethods[j] + "\\b\\W");
 				if (codeLine.match(constructorMethodRegex) && keyShouldBeIgnored(codeLine) === false) {
 					splitCodeLine = codeLine.split(",");
 					partMethod = splitCodeLine[0];
@@ -743,7 +784,7 @@
 		return false;
 	}
 
-	function evaluateScript(codeAsString) {
+Key	function evaluateScript(codeAsString) {
 		try {
 			eval(codeAsString);
 		} catch (e) {
@@ -895,6 +936,11 @@
 		uiControlls.shortMethodNames.helpTip = "Renames methods globally:\n" + objectToString(predefined.shortMethodNames, "() to ", "- ", "();");
 		uiControlls.wrapToFunction = grpRightColumn.add("checkbox", undefined, "Wrap to function block");
 		uiControlls.wrapToFunction.helpTip = "Wraps entire code block to function block";
+		uiControlls.wrapToFunction.onClick = function () {
+			uiControlls.extractParameters.enabled = this.value;
+		};
+		uiControlls.extractParameters = grpRightColumn.add("checkbox", undefined, "Extract parameters");
+		uiControlls.extractParameters.helpTip = "Extracts parameters and puts them to function call";
 
 		addSpace(grpRightColumn, 10);
 
@@ -964,6 +1010,8 @@
 			btnCleanCode.size.height = btnCleanCode.size.height * 1.5;
 			uiControlls.etOutputText.onChanging();
 			uiControlls.etInputText.onChanging();
+
+			uiControlls.extractParameters.enabled = uiControlls.wrapToFunction.value;
 
 			win.layout.layout(true);
 		};
