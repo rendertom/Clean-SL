@@ -73,12 +73,6 @@
 		removeJunkOnFullLogRead: false,
 		closeAfterSaving: false,
 		descriptorMethods: [
-			"putBoolean",
-			"putPath",
-			"putDouble",
-			"putInteger",
-			"putString",
-			"putUnitDouble",
 			// "clear", // - nothing - Clears the descriptor.
 			// "erase", // - key - Erases a key from the descriptor.
 			// "fromStream", // - value - Creates a descriptor from a stream of bytes; for reading from disk.
@@ -775,8 +769,8 @@
 	}
 
 	function keyShouldBeIgnored(codeLine) {
-		for (var p = 0, pl = predefined.ignoreList.length; p < pl; p++) {
-			var regex2 = new RegExp("\.\\b" + predefined.ignoreList[p] + "\\b\\W");
+		for (var p = 0, pl = predefined.ignoreKeyList.length; p < pl; p++) {
+			var regex2 = new RegExp("\.\\b" + predefined.ignoreKeyList[p] + "\\b\\W");
 			if (codeLine.match(regex2)) {
 				return true;
 			}
@@ -784,7 +778,7 @@
 		return false;
 	}
 
-Key	function evaluateScript(codeAsString) {
+	function evaluateScript(codeAsString) {
 		try {
 			eval(codeAsString);
 		} catch (e) {
