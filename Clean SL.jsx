@@ -72,6 +72,19 @@
 		printToESTK: false,
 		removeJunkOnFullLogRead: false,
 		closeAfterSaving: false,
+		constructorMethods: [
+			"putBoolean",
+			"putUnitDouble",
+			"putDouble",
+			"putInteger",
+			"putString"
+		],
+		ignoreList: [
+			"DocI", "documentID",
+			"kcanDispatchWhileModal",
+			"level",
+			"profile",
+		]
 	};
 
 	var script = {
@@ -97,6 +110,7 @@
 	var Incrementor = (function () {
 		var storedFunctions = [],
 			storedVariables = [],
+			storedKeys = [],
 			reservedWords = ["abstract", "arguments", "boolean", "break", "byte", "case", "catch", "char", "class", "const", "continue", "debugger", "default", "delete",
 				"do", "double", "else", "enum", "eval", "export", "extends", "false", "final", "finally", "float", "for", "function", "goto", "if", "implements", "import",
 				"in", "instanceof", "int", "interface", "let", "long", "native", "new", "null", "package", "private", "protected", "public", "return", "short", "static",
@@ -136,6 +150,12 @@
 			return increment(functionName, storedFunctions);
 		}
 
+		function incrementKeys(string) {
+			var keyName = string;
+			keyName = validateName(keyName);
+			return increment(keyName, storedKeys);
+		}
+
 		function increment(string, storedArray) {
 			var coreName, newVariableVersion, versionNumber;
 			coreName = string.replace(/\d+$/, "");
@@ -163,7 +183,8 @@
 			resetVariables: resetVariables,
 			resetFunctions: resetFunctions,
 			incrementVariables: incrementVariables,
-			incrementFunctions: incrementFunctions
+			incrementFunctions: incrementFunctions,
+			incrementKeys : incrementKeys
 		};
 	})();
 
@@ -327,7 +348,6 @@
 			if (settings.charIDToStringID.value) string = convert_CharID_to_StringID(string);
 			if (settings.shortMethodNames.value) string = shortMethodNames(string);
 			if (settings.wrapToFunction.value) string = wrapToFunction(string);
-
 			return string;
 
 		} catch (e) {
@@ -609,14 +629,40 @@
 		return outString;
 	}
 
+	function getFields(array, property) {
+		var value, tempValue, values = [], i, il;
+		for (i = 0, il = array.length; i < il; i++) {
+			value = array[i][property];
+			tempValue = parseFloat(value);
+			if (!isNaN(tempValue)) {
+				value = tempValue;
+			}
+			values.push(value);
+		}
+		return values;
+	}
+
 	function wrapToFunction(inString) {
 		var outString,
 			functionName,
 			functionBlock,
 			functionNameFromExecuteAction,
-			executeActionLine;
+			executeActionLine,
+			methodParameters,
+			parameterNames = "",
+			parameterValues = "";
+
 
 		outString = inString;
+
+		var toExtract = true;
+		if (toExtract === true) {
+			methodParameters = getMethodParameters(outString);
+			outString = methodParameters.outString;
+			parameterNames = getFields(methodParameters.parameters, "methodKey").join(", ");
+			parameterValues = getFields(methodParameters.parameters, "methodValue").join(", ");
+		}
+
 		functionName = "xxx";
 		executeActionLine = outString.match(/executeAction.*/);
 		if (executeActionLine) {
@@ -627,10 +673,67 @@
 		}
 
 		functionName = Incrementor.incrementFunctions(functionName);
-		functionBlock = functionName + "();\n" + "function " + functionName + "() {\n";
+		functionBlock = functionName + "(" + parameterValues + ");\n" + "function " + functionName + "(" + parameterNames + ") {\n";
 		outString = functionBlock + fixIndentation(outString, "\t", false) + "\n}";
 
 		return outString;
+	}
+
+	function getMethodParameters(inString) {
+		var outString,
+			codeArray, codeLine,
+			constructorMethodRegex,
+			parameters = [],
+			methodKey,
+			methodValue,
+			i, il, j, jl;
+
+		outString = inString;
+		codeArray = outString.split("\n");
+		for (i = 0, il = codeArray.length; i < il; i++) {
+			codeLine = codeArray[i];
+			for (j = 0, jl = predefined.constructorMethods.length; j < jl; j++) {
+				constructorMethodRegex = new RegExp("\\.\\b" + predefined.constructorMethods[j] + "\\b\\W");
+				if (codeLine.match(constructorMethodRegex) && keyShouldBeIgnored(codeLine) === false) {
+					var regBetweenQuotes = new RegExp("\[\"'](.*?)[\"']");
+					if (!regBetweenQuotes.test(codeLine)) {
+						continue;
+					}
+
+					methodKey = codeLine.match(regBetweenQuotes)[1]; // Matches text between quotes
+					if (methodKey === "") continue;
+					methodKey = Incrementor.incrementKeys(methodKey);
+
+					methodValue = codeLine.substring(codeLine.lastIndexOf(",") + 1, codeLine.lastIndexOf(")"));
+					methodValue = trimSpaces(methodValue);
+
+					codeArray[i] = codeLine.replace(methodValue, methodKey);
+
+					parameters.push({
+						methodKey: methodKey,
+						methodValue: methodValue
+					});
+					break;
+				}
+			}
+		}
+
+		outString = codeArray.join("\n");
+
+		return {
+			outString: outString,
+			parameters: parameters
+		};
+	}
+
+	function keyShouldBeIgnored(codeLine) {
+		for (var p = 0, pl = predefined.ignoreList.length; p < pl; p++) {
+			var regex2 = new RegExp("\.\\b" + predefined.ignoreList[p] + "\\b\\W");
+			if (codeLine.match(regex2)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	function evaluateScript(codeAsString) {
