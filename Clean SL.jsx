@@ -184,7 +184,7 @@
 			resetFunctions: resetFunctions,
 			incrementVariables: incrementVariables,
 			incrementFunctions: incrementFunctions,
-			incrementKeys : incrementKeys
+			incrementKeys: incrementKeys
 		};
 	})();
 
@@ -630,7 +630,8 @@
 	}
 
 	function getFields(array, property) {
-		var value, tempValue, values = [], i, il;
+		var value, tempValue, values = [],
+			i, il;
 		for (i = 0, il = array.length; i < il; i++) {
 			value = array[i][property];
 			tempValue = parseFloat(value);
@@ -681,7 +682,7 @@
 
 	function getMethodParameters(inString) {
 		var outString,
-			codeArray, codeLine,
+			codeArray, codeLine, splitCodeLine, partMethod, partValue, regBetweenQuotes,
 			constructorMethodRegex,
 			parameters = [],
 			methodKey,
@@ -690,24 +691,30 @@
 
 		outString = inString;
 		codeArray = outString.split("\n");
+
+		regBetweenQuotes = new RegExp("\[\"'](.*?)[\"']");
+
 		for (i = 0, il = codeArray.length; i < il; i++) {
 			codeLine = codeArray[i];
 			for (j = 0, jl = predefined.constructorMethods.length; j < jl; j++) {
 				constructorMethodRegex = new RegExp("\\.\\b" + predefined.constructorMethods[j] + "\\b\\W");
 				if (codeLine.match(constructorMethodRegex) && keyShouldBeIgnored(codeLine) === false) {
-					var regBetweenQuotes = new RegExp("\[\"'](.*?)[\"']");
-					if (!regBetweenQuotes.test(codeLine)) {
-						continue;
-					}
+					splitCodeLine = codeLine.split(",");
+					partMethod = splitCodeLine[0];
+					partValue = splitCodeLine[splitCodeLine.length - 1];
 
-					methodKey = codeLine.match(regBetweenQuotes)[1]; // Matches text between quotes
+					if (!regBetweenQuotes.test(partMethod)) continue;
+					methodKey = partMethod.match(regBetweenQuotes)[1]; // Matches text between quotes
 					if (methodKey === "") continue;
 					methodKey = Incrementor.incrementKeys(methodKey);
 
-					methodValue = codeLine.substring(codeLine.lastIndexOf(",") + 1, codeLine.lastIndexOf(")"));
+					methodValue = partValue.substring(partValue.lastIndexOf(",") + 1, partValue.lastIndexOf(")"));
 					methodValue = trimSpaces(methodValue);
 
-					codeArray[i] = codeLine.replace(methodValue, methodKey);
+					partValue = partValue.replace(methodValue, methodKey);
+					splitCodeLine[splitCodeLine.length - 1] = partValue;
+
+					codeArray[i] = splitCodeLine.join(",");
 
 					parameters.push({
 						methodKey: methodKey,
