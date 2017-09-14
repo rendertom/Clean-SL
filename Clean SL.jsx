@@ -123,7 +123,7 @@
 	var script = {
 		name: "Clean ScriptingListenerJS.log",
 		nameShort: "Clean SL",
-		version: "1.3.1",
+		version: "1.4-beta",
 		developer: {
 			name: File.decode("Tomas%20%C5%A0ink%C5%ABnas"), // Tomas Šinkūnas
 			url: "http://www.rendertom.com"
@@ -230,7 +230,7 @@
 		var settings, defaultSettings, startupSettings,
 			pathToSettingsFile;
 
-		pathToSettingsFile = File($.fileName).parent.fsName + "/" + "Clean SL Settings.txt";
+		pathToSettingsFile = File($.fileName).parent.fsName + "/" + script.nameShort + " Settings " + script.version + ".txt";
 		defaultSettings = {
 			hoistVariables: {
 				value: true
