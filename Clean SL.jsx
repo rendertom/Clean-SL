@@ -143,7 +143,7 @@
 	var Incrementor = (function () {
 		var storedFunctions = [],
 			storedVariables = [],
-			storedKeys = [],
+			storedParameters = [],
 			reservedWords = ["abstract", "arguments", "boolean", "break", "byte", "case", "catch", "char", "class", "const", "continue", "debugger", "default", "delete",
 				"do", "double", "else", "enum", "eval", "export", "extends", "false", "final", "finally", "float", "for", "function", "goto", "if", "implements", "import",
 				"in", "instanceof", "int", "interface", "let", "long", "native", "new", "null", "package", "private", "protected", "public", "return", "short", "static",
@@ -171,6 +171,10 @@
 			storedFunctions = reservedWords.slice(0);
 		}
 
+		function resetParameters() {
+			storedParameters = reservedWords.slice(0);
+		}
+
 		function incrementVariables(string) {
 			var variableName = string;
 			variableName = validateName(variableName);
@@ -183,10 +187,10 @@
 			return increment(functionName, storedFunctions);
 		}
 
-		function incrementKeys(string) {
-			var keyName = string;
-			keyName = validateName(keyName);
-			return increment(keyName, storedKeys);
+		function incrementParameters(string) {
+			var parameterName = string;
+			parameterName = validateName(parameterName);
+			return increment(parameterName, storedParameters);
 		}
 
 		function increment(string, storedArray) {
@@ -215,9 +219,10 @@
 		return {
 			resetVariables: resetVariables,
 			resetFunctions: resetFunctions,
+			resetParameters : resetParameters,
 			incrementVariables: incrementVariables,
 			incrementFunctions: incrementFunctions,
-			incrementKeys: incrementKeys
+			incrementParameters: incrementParameters
 		};
 	})();
 
@@ -354,6 +359,7 @@
 		dirtyCodeArray = dirtyCode.split(logSeparator);
 		for (i = 0, il = dirtyCodeArray.length; i < il; i++) {
 			Incrementor.resetVariables();
+			Incrementor.resetParameters();
 
 			dirtyCodeBlock = trimSpaces(dirtyCodeArray[i]);
 			if (dirtyCodeBlock === "") continue;
@@ -741,7 +747,7 @@
 					if (!regBetweenQuotes.test(partMethod)) continue;
 					methodKey = partMethod.match(regBetweenQuotes)[1]; // Matches text between quotes
 					if (methodKey === "") continue;
-					methodKey = Incrementor.incrementKeys(methodKey);
+					methodKey = Incrementor.incrementParameters(methodKey);
 
 					methodValue = partValue.substring(partValue.lastIndexOf(",") + 1, partValue.lastIndexOf(")"));
 					methodValue = trimSpaces(methodValue);
