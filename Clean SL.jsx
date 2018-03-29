@@ -123,7 +123,7 @@
 	var script = {
 		name: "Clean ScriptingListenerJS.log",
 		nameShort: "Clean SL",
-		version: "1.4-beta",
+		version: "1.4",
 		developer: {
 			name: File.decode("Tomas%20%C5%A0ink%C5%ABnas"), // Tomas Šinkūnas
 			url: "http://www.rendertom.com"
@@ -132,7 +132,7 @@
 			return this.nameShort + " v" + this.version + "\n" + "Photoshop utility tool to clean " +
 				"up ScriptingListenerJS log file. Script performs multiple actions such as cleaning-up " +
 				"variable names and hoisting them to the top, wraps code block into function, " +
-				"converts charID to string ID and such.\n\n" +
+				"converts charID to string ID, extracts parameter values and such.\n\n" +
 				"Resulting code is clean and maintains better readability.\n\n" +
 				"Developed by " + this.developer.name + "\n" + this.developer.url;
 		}
