@@ -72,12 +72,58 @@
 		printToESTK: false,
 		removeJunkOnFullLogRead: false,
 		closeAfterSaving: false,
+		descriptorMethods: [
+			// "clear", // - nothing - Clears the descriptor.
+			// "erase", // - key - Erases a key from the descriptor.
+			// "fromStream", // - value - Creates a descriptor from a stream of bytes; for reading from disk.
+			// "getBoolean", // - key - Gets the value of a key of type boolean.
+			// "getClass", // - key - Gets the value of a key of type class.
+			// "getData", // - key - Gets raw byte data as a string value.
+			// "getDouble", // - key - Gets the value of a key of type double.
+			// "getEnumerationType", // - key - Gets the enumeration type of a key.
+			// "getEnumerationValue", // - key - Gets the enumeration value of a key.
+			// "getInteger", // - key - Gets the value of a key of type integer.
+			// "getKey", // - index - Gets the ID of the Nth key, provided by index.
+			// "getLargeInteger", // - key - Gets the value of a key of type large integer.
+			// "getList", // - key - Gets the value of a key of type list.
+			// "getObjectType", // - key - Gets the class ID of an object in a key of type object.
+			// "getObjectValue", // - key - Gets the value of a key of type object.
+			// "getPath", // - key - Gets the value of a key of type File.
+			// "getReference", // - key - Gets the value of a key of type ActionReference.
+			// "getString", // - key - Gets the value of a key of type string.
+			// "getType", // - key - Gets the type of a key.
+			// "getUnitDoubleType", // - key - Gets the unit type of a key of type UnitDouble.
+			// "getUnitDoubleValue", // - Gets the value of a key of type UnitDouble.
+			// "hasKey", // - key - Checks whether the descriptor contains the provided key.
+			// "isEqual", // - Determines whether the descriptor is the same as another descriptor.
+			"putBoolean", // - key, value - Sets the value for a key whose type is boolean.
+			// "putClass", // - key, value - Sets the value for a key whose type is class.
+			// "putData", // - key, value - Puts raw byte data as a string value.
+			"putDouble", // - key, value - Sets the value for a key whose type is double.
+			// "putEnumerated", // - key, enumType, value - Sets the enumeration type and value for a key.
+			"putInteger", // - key, value - Sets the value for a key whose type is integer.
+			"putLargeInteger", // - key, value - Sets the value for a key whose type is large integer.
+			// "putList", // - key, value - Sets the value for a key whose type is an ActionList object.
+			// "putObject", // - key, classID, value - Sets the value for a key whose type is an object, represented by an Action Descriptor.
+			"putPath", // - key, value - Sets the value for a key whose type is path.
+			// "putReference", // - key, value - Sets the value for a key whose type is an object reference.
+			"putString", // - key, value - Sets the value for a key whose type is string.
+			"putUnitDouble", // - key, unitID, value - Sets the value for a key whose type is a unit value formatted as a double.
+			// "toStream", // - nothing - Gets the entire descriptor as a stream of bytes, for writing to disk.
+
+		],
+		ignoreKeyList: [
+			"DocI", "documentID",
+			"kcanDispatchWhileModal",
+			"level",
+			"profile",
+		]
 	};
 
 	var script = {
 		name: "Clean ScriptingListenerJS.log",
 		nameShort: "Clean SL",
-		version: "1.3.1",
+		version: "1.4",
 		developer: {
 			name: File.decode("Tomas%20%C5%A0ink%C5%ABnas"), // Tomas Šinkūnas
 			url: "http://www.rendertom.com"
@@ -86,7 +132,7 @@
 			return this.nameShort + " v" + this.version + "\n" + "Photoshop utility tool to clean " +
 				"up ScriptingListenerJS log file. Script performs multiple actions such as cleaning-up " +
 				"variable names and hoisting them to the top, wraps code block into function, " +
-				"converts charID to string ID and such.\n\n" +
+				"converts charID to string ID, extracts parameter values and such.\n\n" +
 				"Resulting code is clean and maintains better readability.\n\n" +
 				"Developed by " + this.developer.name + "\n" + this.developer.url;
 		}
@@ -97,6 +143,7 @@
 	var Incrementor = (function () {
 		var storedFunctions = [],
 			storedVariables = [],
+			storedParameters = [],
 			reservedWords = ["abstract", "arguments", "boolean", "break", "byte", "case", "catch", "char", "class", "const", "continue", "debugger", "default", "delete",
 				"do", "double", "else", "enum", "eval", "export", "extends", "false", "final", "finally", "float", "for", "function", "goto", "if", "implements", "import",
 				"in", "instanceof", "int", "interface", "let", "long", "native", "new", "null", "package", "private", "protected", "public", "return", "short", "static",
@@ -124,6 +171,10 @@
 			storedFunctions = reservedWords.slice(0);
 		}
 
+		function resetParameters() {
+			storedParameters = reservedWords.slice(0);
+		}
+
 		function incrementVariables(string) {
 			var variableName = string;
 			variableName = validateName(variableName);
@@ -134,6 +185,12 @@
 			var functionName = string;
 			functionName = validateName(functionName);
 			return increment(functionName, storedFunctions);
+		}
+
+		function incrementParameters(string) {
+			var parameterName = string;
+			parameterName = validateName(parameterName);
+			return increment(parameterName, storedParameters);
 		}
 
 		function increment(string, storedArray) {
@@ -162,8 +219,10 @@
 		return {
 			resetVariables: resetVariables,
 			resetFunctions: resetFunctions,
+			resetParameters : resetParameters,
 			incrementVariables: incrementVariables,
-			incrementFunctions: incrementFunctions
+			incrementFunctions: incrementFunctions,
+			incrementParameters: incrementParameters
 		};
 	})();
 
@@ -171,7 +230,7 @@
 		var settings, defaultSettings, startupSettings,
 			pathToSettingsFile;
 
-		pathToSettingsFile = File($.fileName).parent.fsName + "/" + "Clean SL Settings.txt";
+		pathToSettingsFile = File($.fileName).parent.fsName + "/" + script.nameShort + " Settings " + script.version + ".txt";
 		defaultSettings = {
 			hoistVariables: {
 				value: true
@@ -189,6 +248,9 @@
 				value: true
 			},
 			wrapToFunction: {
+				value: true
+			},
+			extractParameters: {
 				value: true
 			},
 			closeBeforeEval: {
@@ -297,6 +359,7 @@
 		dirtyCodeArray = dirtyCode.split(logSeparator);
 		for (i = 0, il = dirtyCodeArray.length; i < il; i++) {
 			Incrementor.resetVariables();
+			Incrementor.resetParameters();
 
 			dirtyCodeBlock = trimSpaces(dirtyCodeArray[i]);
 			if (dirtyCodeBlock === "") continue;
@@ -326,8 +389,7 @@
 			if (settings.renameConstructors.value) string = renameConstructors(string);
 			if (settings.charIDToStringID.value) string = convert_CharID_to_StringID(string);
 			if (settings.shortMethodNames.value) string = shortMethodNames(string);
-			if (settings.wrapToFunction.value) string = wrapToFunction(string);
-
+			if (settings.wrapToFunction.value) string = wrapToFunction(string, settings.extractParameters.value);
 			return string;
 
 		} catch (e) {
@@ -609,14 +671,40 @@
 		return outString;
 	}
 
-	function wrapToFunction(inString) {
+	function getFields(array, property) {
+		var value, tempValue, values = [],
+			i, il;
+		for (i = 0, il = array.length; i < il; i++) {
+			value = array[i][property];
+			tempValue = parseFloat(value);
+			if (!isNaN(tempValue)) {
+				value = tempValue;
+			}
+			values.push(value);
+		}
+		return values;
+	}
+
+	function wrapToFunction(inString, toExtractParameters) {
 		var outString,
 			functionName,
 			functionBlock,
 			functionNameFromExecuteAction,
-			executeActionLine;
+			executeActionLine,
+			methodParameters,
+			parameterNames = "",
+			parameterValues = "";
+
 
 		outString = inString;
+
+		if (toExtractParameters === true) {
+			methodParameters = getMethodParameters(outString);
+			outString = methodParameters.outString;
+			parameterNames = getFields(methodParameters.parameters, "methodKey").join(", ");
+			parameterValues = getFields(methodParameters.parameters, "methodValue").join(", ");
+		}
+
 		functionName = "xxx";
 		executeActionLine = outString.match(/executeAction.*/);
 		if (executeActionLine) {
@@ -627,10 +715,73 @@
 		}
 
 		functionName = Incrementor.incrementFunctions(functionName);
-		functionBlock = functionName + "();\n" + "function " + functionName + "() {\n";
+		functionBlock = functionName + "(" + parameterValues + ");\n" + "function " + functionName + "(" + parameterNames + ") {\n";
 		outString = functionBlock + fixIndentation(outString, "\t", false) + "\n}";
 
 		return outString;
+	}
+
+	function getMethodParameters(inString) {
+		var outString,
+			codeArray, codeLine, splitCodeLine, partMethod, partValue, regBetweenQuotes,
+			constructorMethodRegex,
+			parameters = [],
+			methodKey,
+			methodValue,
+			i, il, j, jl;
+
+		outString = inString;
+		codeArray = outString.split("\n");
+
+		regBetweenQuotes = new RegExp("\[\"'](.*?)[\"']");
+
+		for (i = 0, il = codeArray.length; i < il; i++) {
+			codeLine = codeArray[i];
+			for (j = 0, jl = predefined.descriptorMethods.length; j < jl; j++) {
+				constructorMethodRegex = new RegExp("\\.\\b" + predefined.descriptorMethods[j] + "\\b\\W");
+				if (codeLine.match(constructorMethodRegex) && keyShouldBeIgnored(codeLine) === false) {
+					splitCodeLine = codeLine.split(",");
+					partMethod = splitCodeLine[0];
+					partValue = splitCodeLine[splitCodeLine.length - 1];
+
+					if (!regBetweenQuotes.test(partMethod)) continue;
+					methodKey = partMethod.match(regBetweenQuotes)[1]; // Matches text between quotes
+					if (methodKey === "") continue;
+					methodKey = Incrementor.incrementParameters(methodKey);
+
+					methodValue = partValue.substring(partValue.lastIndexOf(",") + 1, partValue.lastIndexOf(")"));
+					methodValue = trimSpaces(methodValue);
+
+					partValue = partValue.replace(methodValue, methodKey);
+					splitCodeLine[splitCodeLine.length - 1] = partValue;
+
+					codeArray[i] = splitCodeLine.join(",");
+
+					parameters.push({
+						methodKey: methodKey,
+						methodValue: methodValue
+					});
+					break;
+				}
+			}
+		}
+
+		outString = codeArray.join("\n");
+
+		return {
+			outString: outString,
+			parameters: parameters
+		};
+	}
+
+	function keyShouldBeIgnored(codeLine) {
+		for (var p = 0, pl = predefined.ignoreKeyList.length; p < pl; p++) {
+			var regex2 = new RegExp("\.\\b" + predefined.ignoreKeyList[p] + "\\b\\W");
+			if (codeLine.match(regex2)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	function evaluateScript(codeAsString) {
@@ -785,6 +936,11 @@
 		uiControlls.shortMethodNames.helpTip = "Renames methods globally:\n" + objectToString(predefined.shortMethodNames, "() to ", "- ", "();");
 		uiControlls.wrapToFunction = grpRightColumn.add("checkbox", undefined, "Wrap to function block");
 		uiControlls.wrapToFunction.helpTip = "Wraps entire code block to function block";
+		uiControlls.wrapToFunction.onClick = function () {
+			uiControlls.extractParameters.enabled = this.value;
+		};
+		uiControlls.extractParameters = grpRightColumn.add("checkbox", undefined, "Extract parameters");
+		uiControlls.extractParameters.helpTip = "Extracts parameters and puts them to function call";
 
 		addSpace(grpRightColumn, 10);
 
@@ -854,6 +1010,8 @@
 			btnCleanCode.size.height = btnCleanCode.size.height * 1.5;
 			uiControlls.etOutputText.onChanging();
 			uiControlls.etInputText.onChanging();
+
+			uiControlls.extractParameters.enabled = uiControlls.wrapToFunction.value;
 
 			win.layout.layout(true);
 		};
